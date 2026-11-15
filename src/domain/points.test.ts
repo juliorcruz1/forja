@@ -227,11 +227,14 @@ describe('performance', () => {
     let t = performance.now();
     computePoints(input);
     const cold = performance.now() - t;
+    memoStats.reset();
     t = performance.now();
     computePoints({ ...input });
     const warm = performance.now() - t;
     expect(cold).toBeLessThan(3000);
-    expect(warm).toBeLessThan(cold);
+    // Deterministic check (timings are noisy on CI): a re-render recomputes no day at all.
+    expect(memoStats.computed).toBe(0);
+    expect(warm).toBeLessThan(3000);
     console.log(`points: cold ${cold.toFixed(0)} ms, memoized ${warm.toFixed(0)} ms`);
   });
 });
