@@ -62,7 +62,14 @@ export function DayStatusSheet({
                 checked={checked.has(it.id)}
                 onChange={() => toggleChecklistItem(habit, date, it.id)}
               />
-              <span className="flex-1 text-sm">{it.name}</span>
+              <span className="flex-1 min-w-0">
+                <span className="text-sm block">{it.name}</span>
+                {(it.note || it.timeOfDay) && (
+                  <span className="text-[12px] text-muted block truncate">
+                    {[it.note, it.timeOfDay].filter(Boolean).join(' · ')}
+                  </span>
+                )}
+              </span>
               {it.essential && <span className="text-[11px] text-blue-text">Esencial</span>}
             </label>
           ))}

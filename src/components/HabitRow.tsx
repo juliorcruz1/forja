@@ -35,7 +35,7 @@ export function HabitRow({ habit, date, today, idx, settings, heavy, onOpen }: P
   if (habit.frequency.type === 'weekly') {
     const g = weeklyGoal(habit, idx, today);
     sub.push(g.state === 'met' ? `¡Meta semanal cumplida! ${g.count} de ${g.target}` : `Llevas ${g.count} de ${g.target} esta semana`);
-    if (!evalDay(habit, date, idx, today).counts && !done && g.state !== 'met' && date === today) sub.push('hoy no planeado');
+    if (g.planned.length > 0 && !evalDay(habit, date, idx, today).counts && !done && g.state !== 'met' && date === today) sub.push('hoy no planeado');
   }
   if (habit.sleepLinked) {
     const n = nightInfo(settings, date);

@@ -34,6 +34,26 @@ describe('compliance from real records', () => {
     expect(habitTally(gym, idx, '2026-11-09', '2026-11-15', '2026-11-12')).toEqual({ done: 2, slots: 2, pct: 100 });
   });
 
+  it('compares against the previous period', () => {
+    const a = habit({ id: 'a', startDate: '2026-11-02' });
+    const prevWeek = ['2026-11-02', '2026-11-03', '2026-11-04', '2026-11-05', '2026-11-06', '2026-11-07', '2026-11-08'];
+    const idx = new HabitIndex(
+      logs('a', {
+        ...Object.fromEntries(prevWeek.slice(0, 3).map((d) => [d, 'done' as const])), // 3/7 last week
+        '2026-11-09': 'done', '2026-11-10': 'done', '2026-11-11': 'done', // 3/4 this week (today Thu 12 pending)
+      }),
+    );
+    const s = periodStats([a], idx, periodFor('week', '2026-11-12'), '2026-11-12');
+    expect(s.previous).toEqual({ done: 3, slots: 7, pct: 43 });
+    expect(s.overall).toEqual({ done: 3, slots: 4, pct: 75 });
+    expect(observation(s)).toContain('Vas 32 puntos arriba');
+  });
+
+  it('archived habits with nothing to measure are left out of "Por hábito"', () => {
+    const a = habit({ id: 'a', startDate: '2026-11-12', lifecycle: 'archived', archivedAt: '2026-11-12' });
+    expect(periodStats([a], new HabitIndex(), periodFor('week', '2026-11-12'), '2026-11-12').perHabit).toEqual([]);
+  });
+
   it('optional habits do not enter compliance', () => {
     const a = habit({ id: 'a', startDate: '2026-11-09' });
     const extra = habit({ id: 'e', startDate: '2026-11-09', required: false });

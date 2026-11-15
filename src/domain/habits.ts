@@ -60,11 +60,21 @@ export function weekCount(h: Habit, ws: DateKey, idx: HabitIndex, upTo?: DateKey
   return n;
 }
 
-/** Target for a week, reduced when the habit was only active part of the week. */
+/**
+ * Weekly target. Always the configured goal (e.g. 5) for any week in which the
+ * habit is active at least one day; 0 when it is inactive the whole week.
+ */
 export function weekTarget(h: Habit, ws: DateKey): number {
   if (h.frequency.type !== 'weekly') return 0;
-  const activeDays = weekDays(ws).filter((d) => isActiveOn(h, d)).length;
-  return Math.min(h.frequency.target, activeDays);
+  return weekDays(ws).some((d) => isActiveOn(h, d)) ? h.frequency.target : 0;
+}
+
+/**
+ * A week the habit didn't cover entirely (start week, pause, archive). Such a
+ * week can be met, but is never counted as failed.
+ */
+export function isPartialWeek(h: Habit, ws: DateKey): boolean {
+  return !weekDays(ws).every((d) => isActiveOn(h, d));
 }
 
 export interface DayEval {
@@ -97,6 +107,7 @@ export function evalDay(h: Habit, date: DateKey, idx: HabitIndex, today: DateKey
   const doneSoFar = weekCount(h, ws, idx, date);
   if (doneSoFar >= target) return { counts: false, done: false, status }; // goal already met
   if (date === today) return { counts: true, done: false, status };
+  if (isPartialWeek(h, ws)) return { counts: false, done: false, status };
   const daysLeftAfter = 6 - weekday(date);
   const unreachable = target - doneSoFar > daysLeftAfter;
   return { counts: unreachable, done: false, status };
@@ -174,6 +185,7 @@ export function weekState(h: Habit, ws: DateKey, idx: HabitIndex, today: DateKey
   const count = weekCount(h, ws, idx);
   if (count >= target) return 'met';
   const end = addDays(ws, 6);
+  if (isPartialWeek(h, ws)) return end < today ? 'none' : 'open';
   if (end < today) return 'missed';
   if (ws > today) return 'open';
   const left = remainingDaysInWeek(h, today, idx);

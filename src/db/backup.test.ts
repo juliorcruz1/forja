@@ -35,7 +35,8 @@ describe('JSON backup', () => {
     expect(await db.journal.get('2030-01-01')).toBeUndefined();
     expect((await db.reviews.get('2026-11-09'))!.answers).toEqual(['a', 'b', 'c']);
     expect(await db.relapses.count()).toBe(1);
-    expect(await db.settings.get('settings')).toBeDefined();
+    // restoring the backup must not bring back the "make a backup" reminder
+    expect((await db.settings.get('settings'))!.lastBackupAt).toBe(backup.exportedAt);
   });
 
   it('rejects invalid files with a clear message', () => {

@@ -37,8 +37,8 @@ const SEEDS: HabitSeed[] = [
     name: 'Gym',
     icon: 'dumbbell',
     kind: 'check',
-    // Default planned days avoid the 5:00 AM shifts (Fri/Sat).
-    frequency: { type: 'weekly', target: 5, plannedDays: [0, 1, 2, 3, 6] },
+    // No planned days by default: the user marks them each week (or in the habit).
+    frequency: { type: 'weekly', target: 5, plannedDays: [] },
     minVersion: '10 min de movimiento',
     identity: 'Soy alguien que se cuida',
     required: true,

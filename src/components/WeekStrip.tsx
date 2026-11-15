@@ -27,7 +27,8 @@ export function WeekStrip({ habit, idx, today, ws = weekStart(today) }: { habit:
           const planned = goal.planned.includes(i as Weekday) && isActiveOn(habit, d);
           const isToday = d === today;
           let cls = 'border border-line2 text-dim';
-          if (done && planned) cls = 'bg-violet text-white';
+          // "Día extra" only makes sense when the week has planned days
+          if (done && (planned || goal.planned.length === 0)) cls = 'bg-violet text-white';
           else if (done) cls = 'bg-blue text-white';
           else if (planned) cls = 'border-2 border-dashed border-violet text-violet-text';
           return (

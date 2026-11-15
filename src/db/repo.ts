@@ -144,7 +144,9 @@ export const pauseHabit = (id: string, today = todayKey()) =>
 export const resumeHabit = (id: string, today = todayKey()) =>
   patchHabit(id, (h) => ({
     lifecycle: 'active',
-    pauses: h.pauses.map((p) => (p.to ? p : { ...p, to: p.from > today ? p.from : addDaysSafe(today, -1) })),
+    pauses: h.pauses
+      .map((p) => (p.to ? p : { ...p, to: addDaysSafe(today, -1) }))
+      .filter((p) => p.to! >= p.from), // paused and resumed the same day: no paused days
   }));
 
 export const archiveHabit = (id: string, today = todayKey()) =>

@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight, Flame, Lightbulb, Trophy } from 'lucide-react';
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { HabitIcon } from '../components/icons';
 import { Bar, Card, Empty, Screen, Segmented } from '../components/ui';
 import { badHabitStats, relapsesInRange } from '../domain/bad';
@@ -50,12 +51,12 @@ export function StatsScreen() {
         <p className="text-[13px] text-muted">Cumplimiento</p>
         <div className="flex items-end gap-3 mt-1">
           <p className="text-[48px] leading-none font-bold tracking-tight">{s.overall.pct === null ? '—' : `${s.overall.pct}%`}</p>
-          {delta !== null && (
-            <p className={`text-[13px] mb-1.5 ${delta >= 0 ? 'text-violet-text' : 'text-muted'}`}>
-              {delta >= 0 ? '+' : ''}{delta} pts vs {PREV_LABEL[kind]}
-            </p>
-          )}
         </div>
+        <p className={`text-[13px] mt-2 ${delta !== null && delta >= 0 ? 'text-violet-text' : 'text-muted'}`}>
+          {delta !== null
+            ? `${delta >= 0 ? '+' : ''}${delta} pts vs ${PREV_LABEL[kind]} (${s.previous.pct}%)`
+            : `Sin registros en ${PREV_LABEL[kind]} para comparar`}
+        </p>
         <p className="text-[12px] text-dim mt-1">
           {s.overall.done} de {s.overall.slots} cumplidos{extrasTotal > 0 ? ` · +${extrasTotal} extras` : ''}
         </p>
@@ -75,15 +76,15 @@ export function StatsScreen() {
         </Card>
       </div>
 
-      {obs && (
-        <div className="rounded-card border p-4 flex gap-3" style={{ background: '#1A1530', borderColor: '#3A2F66' }}>
-          <Lightbulb size={20} className="text-night-text shrink-0 mt-0.5" />
-          <div>
-            <p className="font-semibold text-night-text">Observación</p>
-            <p className="text-[14px] text-night-text/90 mt-0.5">{obs}</p>
-          </div>
+      <div className="rounded-card border p-4 flex gap-3" style={{ background: '#1A1530', borderColor: '#3A2F66' }}>
+        <Lightbulb size={20} className="text-night-text shrink-0 mt-0.5" />
+        <div>
+          <p className="font-semibold text-night-text">Observación</p>
+          <p className="text-[14px] text-night-text/90 mt-0.5">
+            {obs ?? 'Todavía no hay registros en este periodo. Marca tus hábitos y aquí aparecerá un análisis de tus datos.'}
+          </p>
         </div>
-      )}
+      </div>
 
       <Card>
         <p className="font-semibold mb-3">Por hábito</p>
@@ -120,6 +121,15 @@ export function StatsScreen() {
         )}
       </Card>
 
+      {activeBad.length === 0 && (
+        <Card>
+          <p className="font-semibold mb-1">Hábitos malos</p>
+          <p className="text-[13px] text-muted">
+            Aquí verás días sin caer, mejor marca y recaídas por semana y mes.{' '}
+            <Link to="/malos/nuevo" className="text-violet-text">Agregar uno</Link>
+          </p>
+        </Card>
+      )}
       {activeBad.length > 0 && (
         <Card>
           <p className="font-semibold mb-3">Hábitos malos</p>

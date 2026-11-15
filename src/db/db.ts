@@ -2,13 +2,14 @@ import Dexie, { type Table } from 'dexie';
 import type {
   BadHabit, DayMeta, Habit, HabitLog, JournalEntry, Relapse, Settings, WeekPlan, WeeklyReview,
 } from './types';
+import { migrateHabitV1toV2 } from './migrations';
 
 /**
  * Versioned schema. To evolve it, add a new `this.version(n)` block with the
  * new stores and an `.upgrade()` migration; never edit an old version.
  * Keep SCHEMA_VERSION in sync — it is also written into JSON backups.
  */
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 export class ForjaDB extends Dexie {
   habits!: Table<Habit, string>;
@@ -34,6 +35,14 @@ export class ForjaDB extends Dexie {
       dayMeta: 'id, date',
       settings: 'id',
     });
+    // v2: same stores; Gym seed no longer has default planned days.
+    this.version(2)
+      .stores({})
+      .upgrade((tx) =>
+        tx.table<Habit, string>('habits').toCollection().modify((h, ref) => {
+          ref.value = migrateHabitV1toV2(h);
+        }),
+      );
   }
 }
 

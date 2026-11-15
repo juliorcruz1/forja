@@ -1,6 +1,8 @@
 /** Versioned JSON backup: export, validate, migrate and import. */
 import { db, SCHEMA_VERSION, TABLES, type TableName } from './db';
 import { nowIso } from '../lib/id';
+import { migrateHabitV1toV2 } from './migrations';
+import type { Habit } from './types';
 
 export const BACKUP_FORMAT = 'forja-backup';
 
@@ -16,14 +18,23 @@ export async function createBackup(): Promise<Backup> {
   await db.transaction('r', TABLES.map((t) => db.table(t)), async () => {
     for (const t of TABLES) data[t] = await db.table(t).toArray();
   });
-  return { format: BACKUP_FORMAT, schemaVersion: SCHEMA_VERSION, exportedAt: nowIso(), data };
+  const exportedAt = nowIso();
+  // The backup itself counts as the last backup, so restoring it doesn't re-trigger the reminder.
+  data.settings = data.settings.map((s) => ({ ...(s as object), lastBackupAt: exportedAt }));
+  return { format: BACKUP_FORMAT, schemaVersion: SCHEMA_VERSION, exportedAt, data };
 }
 
 /**
  * Migrations from older backup schema versions to the current one.
  * Add a step here whenever SCHEMA_VERSION increases: MIGRATIONS[1] turns v1 into v2, etc.
  */
-const MIGRATIONS: Record<number, (b: Backup) => Backup> = {};
+const MIGRATIONS: Record<number, (b: Backup) => Backup> = {
+  1: (b) => ({
+    ...b,
+    schemaVersion: 2,
+    data: { ...b.data, habits: (b.data.habits as Habit[]).map(migrateHabitV1toV2) },
+  }),
+};
 
 export function migrateBackup(b: Backup): Backup {
   let cur = b;

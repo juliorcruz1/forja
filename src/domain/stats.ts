@@ -4,7 +4,7 @@ import {
   addDays, addMonths, type DateKey, MONTH_NAMES, WEEKDAY_NAMES, WEEKDAY_LETTER, daysInMonth, formatShort,
   minKey, maxKey, monthStart, range, weekday, weekStart,
 } from '../lib/dates';
-import { evalDay, HabitIndex, remainingDaysInWeek, weekCount, weekTarget } from './habits';
+import { evalDay, HabitIndex, isPartialWeek, remainingDaysInWeek, weekCount, weekTarget } from './habits';
 
 export type PeriodKind = 'week' | 'month' | 'year';
 
@@ -78,7 +78,7 @@ export function habitTally(h: Habit, idx: HabitIndex, from: DateKey, to: DateKey
     const count = Math.min(weekCount(h, ws, idx), target);
     const isCurrent = ws === weekStart(today);
     const remaining = isCurrent ? remainingDaysInWeek(h, today, idx) : 0;
-    const lost = Math.max(0, target - count - remaining);
+    const lost = isPartialWeek(h, ws) ? 0 : Math.max(0, target - count - remaining);
     done += count;
     slots += count + lost;
   }
@@ -160,7 +160,8 @@ export function periodStats(habits: Habit[], idx: HabitIndex, p: Period, today: 
   const required = habits.filter((h) => h.required);
   const perHabit = required
     .map((habit) => ({ habit, tally: habitTally(habit, idx, p.from, p.to, today) }))
-    .filter((s) => s.tally.slots > 0 || habitHasActivity(s.habit, p, today));
+    // archived/paused habits with nothing to measure in this period are left out
+    .filter((s) => s.tally.slots > 0 || (s.habit.lifecycle === 'active' && habitHasActivity(s.habit, p, today)));
   const extras = habits
     .filter((h) => !h.required)
     .map((habit) => ({
@@ -195,7 +196,7 @@ function habitHasActivity(h: Habit, p: Period, today: DateKey) {
 
 /** A short observation built from the data. Returns null when there isn't enough data yet. */
 export function observation(s: PeriodStats): string | null {
-  const measurable = s.perHabit.filter((h) => h.tally.slots >= 3 && h.tally.pct !== null);
+  const measurable = s.perHabit.filter((h) => h.tally.slots >= 1 && h.tally.pct !== null);
   if (measurable.length === 0) return null;
   const parts: string[] = [];
   const worst = [...measurable].sort((a, b) => a.tally.pct! - b.tally.pct!)[0];

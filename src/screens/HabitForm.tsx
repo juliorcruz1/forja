@@ -32,7 +32,7 @@ interface FormState {
 }
 
 const EMPTY: FormState = {
-  name: '', icon: 'target', kind: 'check', freqType: 'daily', days: [0, 1, 2, 3, 4], target: 3, plannedDays: [0, 2, 4],
+  name: '', icon: 'target', kind: 'check', freqType: 'daily', days: [0, 1, 2, 3, 4], target: 3, plannedDays: [],
   minVersion: '', identity: '', stackAfter: '', required: true, counterTarget: 1, counterUnit: '', checklist: [], sleepLinked: false,
 };
 
