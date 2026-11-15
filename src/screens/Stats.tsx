@@ -8,6 +8,8 @@ import { bestOverallStreak, overallStreak } from '../domain/habits';
 import { observation, type Period, type PeriodKind, periodFor, periodStats } from '../domain/stats';
 import { useData } from '../hooks/useData';
 import { formatPts, summarize } from '../domain/points';
+import { isLimitHabit, limitOf, usageTrend } from '../domain/social';
+import type { BadHabit } from '../db/types';
 import { LevelBar } from '../components/PointsBits';
 import { MONTH_NAMES, minKey, WEEKDAY_LETTER, weekday } from '../lib/dates';
 import { addDays, addMonths, monthStart, weekStart } from '../lib/dates';
@@ -148,6 +150,7 @@ export function StatsScreen() {
           <p className="font-semibold mb-3">Hábitos malos</p>
           <div className="space-y-3">
             {activeBad.map((b) => {
+              if (isLimitHabit(b)) return <UsageStats key={b.id} bad={b} period={period} />;
               const st = badHabitStats(b, relapses, today);
               const ws = weekStart(today);
               const ms = monthStart(today);
@@ -283,5 +286,56 @@ function PointsCard({ period }: { period: Period }) {
         </>
       )}
     </Card>
+  );
+}
+
+/** Limit-mode habit (Redes / scroll): usage over the selected period, by day (week/month) or month (year). */
+function UsageStats({ bad, period }: { bad: BadHabit; period: Period }) {
+  const { usageLogs, today } = useData()!;
+  const to = minKey(period.to, today);
+  const t = usageTrend(bad, usageLogs, period.from, to < period.from ? period.from : to);
+  const limit = limitOf(bad);
+  const bars =
+    period.kind === 'year'
+      ? MONTH_NAMES.map((m, i) => {
+          const from = addMonths(period.from, i);
+          const end = addDays(addMonths(from, 1), -1);
+          const vals = t.days.filter((d) => d.date >= from && d.date <= end && d.minutes !== null).map((d) => d.minutes as number);
+          return { key: m, label: m.slice(0, 1).toUpperCase(), v: vals.length ? Math.round(vals.reduce((a, n) => a + n, 0) / vals.length) : null };
+        })
+      : t.days.map((d) => ({
+          key: d.date,
+          label: period.kind === 'week' ? WEEKDAY_LETTER[weekday(d.date)] : Number(d.date.slice(8)) % 5 === 1 ? String(Number(d.date.slice(8))) : '',
+          v: d.minutes,
+        }));
+  const max = Math.max(limit * 1.5, ...bars.map((b) => b.v ?? 0));
+  return (
+    <div className="card2 p-3">
+      <p className="text-[14px] font-medium flex items-center gap-2">
+        <HabitIcon name={bad.icon} size={15} className="text-muted" /> {bad.name}
+        <span className="text-[11px] text-dim">límite {limit} min</span>
+      </p>
+      <div className="grid grid-cols-3 gap-2 mt-2 text-center">
+        <MiniStat label="Promedio (min)" value={t.average ?? 0} />
+        <MiniStat label="Días en límite" value={t.daysWithin} />
+        <MiniStat label="Días pasado" value={t.daysOver} />
+      </div>
+      <div className="relative flex items-end gap-[3px] h-[64px] mt-3" role="img" aria-label="Minutos por día">
+        <div className="absolute inset-x-0 border-t border-dashed border-violet/50" style={{ bottom: `${(limit / max) * 100}%` }} />
+        {bars.map((b) => (
+          <div key={b.key} className="flex-1 flex flex-col justify-end h-full">
+            <div
+              className={`rounded-t ${b.v === null ? 'bg-[#121217]' : b.v > limit ? 'bg-line2' : 'bg-violet'}`}
+              style={{ height: b.v === null ? 3 : `${Math.max(4, (b.v / max) * 100)}%` }}
+              title={b.v === null ? 'sin anotar' : `${b.v} min`}
+            />
+          </div>
+        ))}
+      </div>
+      <div className="flex gap-[3px] mt-1">
+        {bars.map((b) => <span key={b.key} className="flex-1 text-center text-[9px] text-dim">{b.label}</span>)}
+      </div>
+      {t.logged === 0 && <p className="text-[11px] text-dim mt-2">Sin minutos anotados en este periodo.</p>}
+    </div>
   );
 }

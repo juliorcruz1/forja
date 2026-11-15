@@ -17,6 +17,8 @@ export function BadHabitFormScreen() {
   const [trigger, setTrigger] = useState('');
   const [replacement, setReplacement] = useState('');
   const [startDate, setStartDate] = useState(data?.today ?? '');
+  const [mode, setMode] = useState<'days' | 'limit'>('days');
+  const [limit, setLimit] = useState('60');
   const [loaded, setLoaded] = useState(!id);
   const [confirm, setConfirm] = useState(false);
 
@@ -27,6 +29,8 @@ export function BadHabitFormScreen() {
       setTrigger(existing.trigger ?? '');
       setReplacement(existing.replacement ?? '');
       setStartDate(existing.startDate);
+      setMode(existing.mode ?? 'days');
+      setLimit(String(existing.limitMinutes ?? 60));
       setLoaded(true);
     }
   }, [existing, loaded]);
@@ -44,6 +48,8 @@ export function BadHabitFormScreen() {
       trigger: trigger.trim() || undefined,
       replacement: replacement.trim() || undefined,
       startDate: startDate || data.today,
+      mode,
+      limitMinutes: mode === 'limit' ? Math.max(1, Math.round(Number(limit) || 60)) : undefined,
     });
     nav('/habitos?tab=malos', { replace: true });
   };
@@ -75,7 +81,25 @@ export function BadHabitFormScreen() {
         </div>
       </Card>
       <Card>
-        <label className="label" htmlFor="trigger">Cuándo me da</label>
+        <p className="label">Cómo lo quieres medir</p>
+        <div className="flex gap-2 flex-wrap mb-1">
+          <button type="button" className={mode === 'days' ? 'chip-on' : 'chip-off'} aria-pressed={mode === 'days'} onClick={() => setMode('days')}>
+            Días sin caer
+          </button>
+          <button type="button" className={mode === 'limit' ? 'chip-on' : 'chip-off'} aria-pressed={mode === 'limit'} onClick={() => setMode('limit')}>
+            Límite diario (minutos)
+          </button>
+        </div>
+        {mode === 'limit' && (
+          <>
+            <label className="label mt-3" htmlFor="limit">Límite por día (minutos)</label>
+            <input id="limit" type="number" inputMode="numeric" min={1} className="field" value={limit} onChange={(e) => setLimit(e.target.value)} />
+            <p className="text-[12px] text-dim mt-1.5 mb-3">
+              Cada noche anotas los minutos del Tiempo en pantalla. Dentro del límite suma, pasarte resta (con el tope diario).
+            </p>
+          </>
+        )}
+        <label className="label mt-4" htmlFor="trigger">Cuándo me da</label>
         <textarea id="trigger" className="field min-h-[70px]" value={trigger} onChange={(e) => setTrigger(e.target.value)} placeholder="Ej. Cuando estoy cansado en la noche" />
         <label className="label mt-4" htmlFor="repl">En vez de eso</label>
         <textarea id="repl" className="field min-h-[70px]" value={replacement} onChange={(e) => setReplacement(e.target.value)} placeholder="Ej. Leo 2 páginas o salgo a caminar" />

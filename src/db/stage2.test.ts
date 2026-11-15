@@ -21,3 +21,35 @@ describe('joker (comodín)', () => {
     expect(await applyJoker('2026-11-12')).toBe(true); // freed after removing
   });
 });
+
+import { deleteBadHabit, saveBadHabit, setUsage } from './repo';
+import { findOrphans } from './integrity';
+import { usageOn, usageTrend, withinStreak } from '../domain/social';
+
+describe('Redes / scroll (limit mode)', () => {
+  it('logs minutes per day (editable), with trend and streak within the limit', async () => {
+    const b = await saveBadHabit({ name: 'Redes / scroll', icon: 'smartphone', mode: 'limit', limitMinutes: 30, startDate: '2026-11-01' });
+    await setUsage(b.id, '2026-11-10', 20);
+    await setUsage(b.id, '2026-11-11', 45);
+    await setUsage(b.id, '2026-11-12', 25);
+    await setUsage(b.id, '2026-11-12', 28); // edited: one record per day
+    const logs = await db.usageLogs.toArray();
+    expect(logs).toHaveLength(3);
+    expect(usageOn(b, logs, '2026-11-12')).toBe(28);
+    const t = usageTrend(b, logs, '2026-11-09', '2026-11-12');
+    expect(t).toMatchObject({ logged: 3, average: 31, daysWithin: 2, daysOver: 1 });
+    expect(t.days[0].minutes).toBeNull(); // not logged
+    expect(withinStreak(b, logs, '2026-11-12')).toBe(1); // the 11th was over
+    expect(withinStreak(b, logs, '2026-11-13')).toBe(1); // today not logged yet: counts from yesterday
+    await setUsage(b.id, '2026-11-12', null);
+    expect(await db.usageLogs.count()).toBe(2);
+  });
+
+  it('deleting the habit removes its minutes too', async () => {
+    const b = await saveBadHabit({ name: 'Redes', icon: 'smartphone', mode: 'limit', limitMinutes: 60 });
+    await setUsage(b.id, '2026-11-10', 20);
+    await deleteBadHabit(b.id);
+    expect(await db.usageLogs.count()).toBe(0);
+    expect((await findOrphans()).usageLogs).toEqual([]);
+  });
+});

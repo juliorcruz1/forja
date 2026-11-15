@@ -8,5 +8,6 @@ export async function findOrphans() {
     habitLogs: (await db.habitLogs.toArray()).filter((l) => !habitIds.has(l.habitId)).map((l) => l.id),
     weekPlans: (await db.weekPlans.toArray()).filter((p) => !habitIds.has(p.habitId)).map((p) => p.id),
     relapses: (await db.relapses.toArray()).filter((r) => !badIds.has(r.badHabitId)).map((r) => r.id),
+    usageLogs: (await db.usageLogs.toArray()).filter((u) => !badIds.has(u.badHabitId)).map((u) => u.id),
   };
 }

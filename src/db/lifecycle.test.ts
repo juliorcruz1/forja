@@ -20,7 +20,7 @@ const snap = async () => ({
   habits: await db.habits.toArray(),
   idx: new HabitIndex(await db.habitLogs.toArray(), await db.weekPlans.toArray()),
 });
-const noOrphans = { habitLogs: [], weekPlans: [], relapses: [] };
+const noOrphans = { habitLogs: [], weekPlans: [], relapses: [], usageLogs: [] };
 
 async function readingWithHistory() {
   const h = await saveHabit({ name: 'Lectura', icon: 'book-open', kind: 'check', frequency: { type: 'daily' }, required: true, startDate: '2026-11-02' });

@@ -3,6 +3,8 @@ import { restoreHabit, resumeHabit } from '../db/repo';
 import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { BadHabitCard } from '../components/BadHabitCard';
+import { LimitHabitCard } from '../components/LimitHabitCard';
+import { isLimitHabit } from '../domain/social';
 import { DayStatusSheet } from '../components/DayStatusSheet';
 import { HabitIcon } from '../components/icons';
 import { MonthGrid } from '../components/MonthGrid';
@@ -213,9 +215,7 @@ function BadHabits({ filter }: { filter: HabitLifecycle }) {
   }
   return (
     <>
-      {list.map((b) => (
-        <BadHabitCard key={b.id} bad={b} />
-      ))}
+      {list.map((b) => (isLimitHabit(b) ? <LimitHabitCard key={b.id} bad={b} /> : <BadHabitCard key={b.id} bad={b} />))}
     </>
   );
 }

@@ -5,6 +5,8 @@ import { useLongPress } from '../hooks/useLongPress';
 import type { BadHabit } from '../db/types';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { OneOffSheet } from '../components/OneOffSheet';
+import { UsageEntry } from '../components/LimitHabitCard';
+import { isLimitHabit, limitOf, usageOn } from '../domain/social';
 import { DayPointsChip, JokerRow, LevelChip } from '../components/PointsBits';
 import { DayStatusSheet } from '../components/DayStatusSheet';
 import { HabitRow } from '../components/HabitRow';
@@ -202,12 +204,25 @@ export function TodayScreen() {
 
       {activeBad.length > 0 && (
         <>
-          <SectionHeader title="Días sin" right={<Link to="/habitos?tab=malos" className="text-[13px] text-violet-text min-h-[44px] flex items-center">Ver</Link>} />
+          <SectionHeader title="Hábitos malos" right={<Link to="/habitos?tab=malos" className="text-[13px] text-violet-text min-h-[44px] flex items-center">Ver</Link>} />
           <div className="grid grid-cols-2 gap-2.5">
             {activeBad.map((b) => (
-              <BadMini key={b.id} bad={b} days={badHabitStats(b, relapses, today).current} onOpen={() => setActions({ kind: 'bad', bad: b })} />
+              <BadMini
+                key={b.id}
+                bad={b}
+                days={badHabitStats(b, relapses, today).current}
+                usage={isLimitHabit(b) ? usageOn(b, data.usageLogs, date) : undefined}
+                onOpen={() => setActions({ kind: 'bad', bad: b })}
+              />
             ))}
           </div>
+          {isToday && new Date().getHours() >= 19 &&
+            activeBad.filter((b) => isLimitHabit(b) && usageOn(b, data.usageLogs, today) === undefined).map((b) => (
+              <div key={b.id} className="card p-3.5">
+                <p className="text-[14px] font-medium mb-2">¿Cuántos minutos de {b.name.toLowerCase()} hoy?</p>
+                <UsageEntry bad={b} compact />
+              </div>
+            ))}
         </>
       )}
 
@@ -263,7 +278,7 @@ export function TodayScreen() {
 }
 
 /** "Días sin" card: tap or long-press opens the actions menu. */
-function BadMini({ bad, days, onOpen }: { bad: BadHabit; days: number; onOpen: () => void }) {
+function BadMini({ bad, days, usage, onOpen }: { bad: BadHabit; days: number; usage?: number; onOpen: () => void }) {
   const press = useLongPress(onOpen);
   return (
     <button className="card p-3.5 text-left active:scale-[0.98] transition" aria-label={`Opciones de ${bad.name}`} aria-haspopup="dialog" {...press}>
@@ -271,10 +286,17 @@ function BadMini({ bad, days, onOpen }: { bad: BadHabit; days: number; onOpen: (
         <HabitIcon name={bad.icon} size={14} />
         <span className="truncate">{bad.name}</span>
       </span>
-      <span className="block text-2xl font-bold mt-1">
-        {days}
-        <span className="text-[13px] font-medium text-muted"> {days === 1 ? 'día' : 'días'}</span>
-      </span>
+      {isLimitHabit(bad) ? (
+        <span className="block text-2xl font-bold mt-1">
+          {usage ?? '—'}
+          <span className="text-[13px] font-medium text-muted"> / {limitOf(bad)} min</span>
+        </span>
+      ) : (
+        <span className="block text-2xl font-bold mt-1">
+          {days}
+          <span className="text-[13px] font-medium text-muted"> {days === 1 ? 'día' : 'días'}</span>
+        </span>
+      )}
     </button>
   );
 }

@@ -207,7 +207,7 @@ export async function deleteHabit(id: string) {
 export async function habitRecordCount(id: string, kind: 'good' | 'bad') {
   return kind === 'good'
     ? db.habitLogs.where('habitId').equals(id).count()
-    : db.relapses.where('badHabitId').equals(id).count();
+    : (await db.relapses.where('badHabitId').equals(id).count()) + (await db.usageLogs.where('badHabitId').equals(id).count());
 }
 
 export async function moveHabit(id: string, dir: -1 | 1) {
@@ -240,7 +240,8 @@ export const updateOneOff = (id: string, name: string, icon: string) =>
 
 // ---------------- Bad habits ----------------
 
-export type BadHabitDraft = Pick<BadHabit, 'name' | 'icon' | 'trigger' | 'replacement'> & Partial<Pick<BadHabit, 'id' | 'startDate'>>;
+export type BadHabitDraft = Pick<BadHabit, 'name' | 'icon' | 'trigger' | 'replacement'> &
+  Partial<Pick<BadHabit, 'id' | 'startDate' | 'mode' | 'limitMinutes'>>;
 
 export async function saveBadHabit(draft: BadHabitDraft): Promise<BadHabit> {
   const t = nowIso();
@@ -267,9 +268,10 @@ export async function setBadHabitLifecycle(id: string, lifecycle: BadHabit['life
 }
 
 export async function deleteBadHabit(id: string) {
-  await db.transaction('rw', db.badHabits, db.relapses, async () => {
+  await db.transaction('rw', db.badHabits, db.relapses, db.usageLogs, async () => {
     await db.badHabits.delete(id);
     await db.relapses.where('badHabitId').equals(id).delete();
+    await db.usageLogs.where('badHabitId').equals(id).delete();
   });
 }
 
@@ -331,3 +333,15 @@ export async function applyJoker(date: DateKey): Promise<boolean> {
 }
 
 export const removeJoker = (date: DateKey) => db.jokers.delete(date);
+
+// ---------------- Stage 2: usage minutes (limit-mode bad habits) ----------------
+
+/** Minutes used that day (manual, from Screen Time). null clears the record. */
+export async function setUsage(badHabitId: string, date: DateKey, minutes: number | null) {
+  const id = `${badHabitId}:${date}`;
+  if (minutes === null) return db.usageLogs.delete(id);
+  const t = nowIso();
+  const existing = await db.usageLogs.get(id);
+  const m = Math.max(0, Math.min(24 * 60, Math.round(minutes)));
+  await db.usageLogs.put({ id, badHabitId, date, minutes: m, createdAt: existing?.createdAt ?? t, updatedAt: t });
+}
