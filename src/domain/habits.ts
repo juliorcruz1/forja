@@ -2,7 +2,7 @@
  * Pure habit logic. Everything here is derived from records (habits, logs,
  * week plans); nothing derived is ever stored.
  */
-import type { ChecklistItem, Habit, HabitLog, LogStatus, WeekPlan, Weekday } from '../db/types';
+import type { Habit, HabitLog, LogStatus, WeekPlan, Weekday } from '../db/types';
 import { addDays, type DateKey, weekday, weekStart, weekDays } from '../lib/dates';
 
 export const isDoneStatus = (s: LogStatus | undefined) => s === 'done' || s === 'min';
@@ -306,17 +306,7 @@ export function weeklyGoal(h: Habit, idx: HabitIndex, today: DateKey, ws: DateKe
 
 // ---------------- Checklist / counter status ----------------
 
-/** Status derived from checked checklist items. */
-export function checklistStatus(items: ChecklistItem[], checked: string[]): LogStatus {
-  if (items.length === 0) return 'pending';
-  const set = new Set(checked);
-  const required = items.filter((i) => i.required);
-  const essential = items.filter((i) => i.essential);
-  const requiredList = required.length ? required : items;
-  if (requiredList.every((i) => set.has(i.id))) return 'done';
-  if (essential.length && essential.every((i) => set.has(i.id))) return 'min';
-  return 'pending';
-}
+export { checklistStatus } from './checklist';
 
 export function counterStatus(count: number, target: number): LogStatus {
   return count >= Math.max(1, target) ? 'done' : 'pending';

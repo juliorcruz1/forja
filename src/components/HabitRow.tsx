@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { incrementCount, setChecklistAll, setStatus, toggleChecklistItem, toggleDone } from '../db/repo';
 import { evalDay, type HabitIndex, isDoneStatus, weeklyGoal } from '../domain/habits';
 import { nightInfo } from '../domain/sleep';
+import { timeLabel, validChecked } from '../domain/checklist';
 import type { DateKey } from '../lib/dates';
 import { formatTime } from '../lib/dates';
 import type { Settings } from '../db/types';
@@ -28,7 +29,8 @@ export function HabitRow({ habit, date, today, idx, settings, heavy, onOpen }: P
   const count = log?.count ?? 0;
   const target = habit.counterTarget ?? 1;
   const items = habit.checklist ?? [];
-  const checked = new Set(log?.checked ?? []);
+  const checked = new Set(validChecked(items, log?.checked));
+  const checkedCount = items.filter((i) => checked.has(i.id)).length;
 
   const sub: string[] = [];
   if (habit.oneOffDate) sub.push(habit.oneOffDate === today ? 'Solo para hoy' : 'Solo este día');
@@ -50,7 +52,9 @@ export function HabitRow({ habit, date, today, idx, settings, heavy, onOpen }: P
   const onCircle = () => {
     if (status === 'rest' || status === 'skipped') return setStatus(habit.id, date, 'pending');
     if (habit.kind === 'checklist' && items.length > 0 && !done) {
-      return setChecklistAll(habit, date, !heavy).then(() => (heavy ? setStatus(habit.id, date, 'min') : undefined));
+      // Heavy day: check only the essentials (minimum). Otherwise: mark all.
+      const hasEssentials = items.some((i) => i.essential);
+      return heavy && hasEssentials ? toggleDone(habit, date, true) : setChecklistAll(habit, date, true);
     }
     return toggleDone(habit, date, heavy && !!habit.minVersion);
   };
@@ -93,25 +97,56 @@ export function HabitRow({ habit, date, today, idx, settings, heavy, onOpen }: P
               Agrega tu lista aquí
             </Link>
           ) : (
-            <div className="flex flex-wrap gap-1.5">
-              {items.map((it) => {
-                const on = checked.has(it.id);
-                return (
+            <>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[12px] text-muted">
+                  {checkedCount} de {items.length} marcados
+                </span>
+                {checkedCount < items.length ? (
                   <button
-                    key={it.id}
-                    onClick={() => toggleChecklistItem(habit, date, it.id)}
-                    className={`inline-flex items-center gap-1.5 rounded-full px-3 min-h-[36px] text-[13px] border transition ${
-                      on ? 'bg-violet-soft border-violet text-violet-text' : 'border-line2 text-muted'
-                    }`}
-                    aria-pressed={on}
+                    className="text-[13px] font-medium text-violet-text min-h-[36px] px-2 -mr-2"
+                    onClick={() => setChecklistAll(habit, date, true)}
                   >
-                    {on && <Check size={13} strokeWidth={3} />}
-                    {it.name}
-                    {it.essential && !on && <span className="w-1.5 h-1.5 rounded-full bg-blue" aria-label="esencial" />}
+                    Marcar todos
                   </button>
-                );
-              })}
-            </div>
+                ) : (
+                  <button className="text-[13px] text-muted min-h-[36px] px-2 -mr-2" onClick={() => setChecklistAll(habit, date, false)}>
+                    Desmarcar
+                  </button>
+                )}
+              </div>
+              <ul className="space-y-1" aria-label={`Lista de ${habit.name}`}>
+                {items.map((it) => {
+                  const on = checked.has(it.id);
+                  const detail = [it.note, timeLabel(it.timeOfDay)].filter(Boolean).join(' · ');
+                  return (
+                    <li key={it.id}>
+                      <button
+                        onClick={() => toggleChecklistItem(habit, date, it.id)}
+                        aria-pressed={on}
+                        className={`w-full flex items-center gap-3 rounded-xl px-2.5 min-h-[44px] py-1.5 text-left border transition ${
+                          on ? 'bg-violet-soft border-violet/50' : 'border-line2'
+                        }`}
+                      >
+                        <span
+                          className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 ${
+                            on ? 'bg-violet' : 'border-2 border-pend'
+                          }`}
+                        >
+                          {on && <Check size={13} strokeWidth={3} className="text-white" />}
+                        </span>
+                        <span className="flex-1 min-w-0">
+                          <span className={`block text-[14px] truncate ${on ? 'text-violet-text' : ''}`}>{it.name}</span>
+                          {detail && <span className="block text-[12px] text-muted truncate">{detail}</span>}
+                        </span>
+                        {it.essential && <span className="text-[11px] text-blue-text shrink-0">Esencial</span>}
+                        {!it.required && !it.essential && <span className="text-[11px] text-dim shrink-0">Opcional</span>}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
           )}
         </div>
       )}

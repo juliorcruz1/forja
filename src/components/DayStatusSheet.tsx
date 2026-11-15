@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import type { Habit, LogStatus } from '../db/types';
 import { incrementCount, setChecklistAll, setLogNote, setStatus, toggleChecklistItem } from '../db/repo';
 import type { HabitIndex } from '../domain/habits';
+import { timeLabel } from '../domain/checklist';
 import { type DateKey, formatLong } from '../lib/dates';
 import { Sheet } from './ui';
 import { HabitIcon } from './icons';
@@ -66,7 +67,7 @@ export function DayStatusSheet({
                 <span className="text-sm block">{it.name}</span>
                 {(it.note || it.timeOfDay) && (
                   <span className="text-[12px] text-muted block truncate">
-                    {[it.note, it.timeOfDay].filter(Boolean).join(' · ')}
+                    {[it.note, timeLabel(it.timeOfDay)].filter(Boolean).join(' · ')}
                   </span>
                 )}
               </span>

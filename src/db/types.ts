@@ -23,7 +23,8 @@ export interface ChecklistItem {
   id: string;
   name: string;
   note?: string; // free text: dose, note… (entered by the user, never suggested)
-  timeOfDay?: 'mañana' | 'mediodía' | 'tarde' | 'noche' | '';
+  /** 'mañana' | 'con comida' | 'noche' | '' (older backups may hold other text) */
+  timeOfDay?: string;
   /** Must be checked for the habit to be "complete". */
   required: boolean;
   /** Checking all essential items = "minimum" version. */

@@ -4,7 +4,8 @@ import type {
   BadHabit, Habit, HabitLog, JournalEntry, LogStatus, Relapse, Settings, Weekday,
 } from './types';
 import { defaultHabits, defaultSettings } from '../config/defaults';
-import { checklistStatus, counterStatus } from '../domain/habits';
+import { counterStatus } from '../domain/habits';
+import { checklistStatus, validChecked } from '../domain/checklist';
 import { addDays as addDaysSafe, type DateKey, todayKey } from '../lib/dates';
 import { nowIso, uid } from '../lib/id';
 
@@ -73,20 +74,40 @@ export async function incrementCount(habit: Habit, date: DateKey, n = 1) {
   });
 }
 
+/** Check or uncheck one item; the habit status follows (complete / minimum / pending). */
 export async function toggleChecklistItem(habit: Habit, date: DateKey, itemId: string) {
   return db.transaction('rw', db.habitLogs, async () => {
+    const items = habit.checklist ?? [];
     const log = await getLog(habit.id, date);
-    const set = new Set(log?.checked ?? []);
+    const set = new Set(validChecked(items, log?.checked));
     if (set.has(itemId)) set.delete(itemId);
     else set.add(itemId);
-    const checked = [...set];
-    return upsertLog(habit.id, date, { checked, status: checklistStatus(habit.checklist ?? [], checked) });
+    const checked = items.map((i) => i.id).filter((id) => set.has(id)); // keep list order
+    return upsertLog(habit.id, date, { checked, status: checklistStatus(items, checked) });
   });
 }
 
+/** "Marcar todos" (all = true) or clear the list (all = false). */
 export async function setChecklistAll(habit: Habit, date: DateKey, all: boolean) {
-  const checked = all ? (habit.checklist ?? []).map((i) => i.id) : [];
-  return upsertLog(habit.id, date, { checked, status: all ? checklistStatus(habit.checklist ?? [], checked) : 'pending' });
+  return db.transaction('rw', db.habitLogs, async () => {
+    const items = habit.checklist ?? [];
+    const checked = all ? items.map((i) => i.id) : [];
+    return upsertLog(habit.id, date, { checked, status: all ? checklistStatus(items, checked) : 'pending' });
+  });
+}
+
+/**
+ * After the list is edited, re-derive that day's status from what is still
+ * checked (e.g. adding a required item turns "complete" back into pending).
+ * Rest / skipped days are left alone.
+ */
+async function recomputeChecklistDay(habit: Habit, date: DateKey) {
+  const log = await getLog(habit.id, date);
+  if (!log || log.status === 'rest' || log.status === 'skipped') return;
+  const items = habit.checklist ?? [];
+  if (items.length === 0) return;
+  const checked = validChecked(items, log.checked);
+  await upsertLog(habit.id, date, { checked, status: checklistStatus(items, checked) });
 }
 
 export function setLogNote(habitId: string, date: DateKey, note: string) {
@@ -129,6 +150,7 @@ export async function saveHabit(draft: HabitDraft): Promise<Habit> {
         updatedAt: t,
       };
   await db.habits.put(habit);
+  if (existing && habit.kind === 'checklist') await recomputeChecklistDay(habit, todayKey());
   return habit;
 }
 

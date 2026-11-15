@@ -9,7 +9,9 @@ import {
 } from '../db/repo';
 import { useData } from '../hooks/useData';
 import { WEEKDAY_LETTER } from '../lib/dates';
-import { uid } from '../lib/id';
+import {
+  addItem, cleanItems, moveItem, removeItem, TIMES_OF_DAY, timeLabel, updateItem,
+} from '../domain/checklist';
 
 type FreqType = Frequency['type'];
 
@@ -82,8 +84,8 @@ export function HabitFormScreen() {
   const valid =
     f.name.trim().length > 0 &&
     (f.freqType !== 'days' || f.days.length > 0) &&
-    (f.freqType !== 'weekly' || (f.target >= 1 && f.target <= 7)) &&
-    f.checklist.every((i) => i.name.trim());
+    (f.freqType !== 'weekly' || (f.target >= 1 && f.target <= 7));
+  // Blank checklist rows never block saving: they are dropped (see cleanItems).
 
   const save = async () => {
     if (!valid) return;
@@ -105,7 +107,7 @@ export function HabitFormScreen() {
       required: f.required,
       counterTarget: f.kind === 'counter' ? Math.max(1, f.counterTarget) : undefined,
       counterUnit: f.kind === 'counter' ? f.counterUnit.trim() || undefined : undefined,
-      checklist: f.kind === 'checklist' ? f.checklist.map((i) => ({ ...i, name: i.name.trim(), note: i.note?.trim() || undefined })) : undefined,
+      checklist: f.kind === 'checklist' ? cleanItems(f.checklist) : undefined,
       sleepLinked: f.sleepLinked || undefined,
     });
     nav(existing ? `/habitos/${h.id}` : '/habitos', { replace: true });
@@ -284,40 +286,130 @@ function DayPicker({ value, onToggle, dashed = false }: { value: Weekday[]; onTo
 }
 
 function ChecklistEditor({ items, onChange }: { items: ChecklistItem[]; onChange: (v: ChecklistItem[]) => void }) {
-  const update = (id: string, patch: Partial<ChecklistItem>) => onChange(items.map((i) => (i.id === id ? { ...i, ...patch } : i)));
+  const [justAdded, setJustAdded] = useState<string | null>(null);
+  const update = (id: string, patch: Partial<ChecklistItem>) => onChange(updateItem(items, id, patch));
+  const add = () => {
+    const next = addItem(items);
+    setJustAdded(next[next.length - 1].id);
+    onChange(next);
+  };
+  const named = items.filter((i) => i.name.trim()).length;
+
   return (
-    <div className="mt-4 space-y-2">
+    <div className="mt-4 space-y-2.5">
+      <div className="flex items-baseline justify-between">
+        <p className="text-[15px] font-semibold">Elementos de la lista</p>
+        <span className="text-[12px] text-muted">{named} {named === 1 ? 'elemento' : 'elementos'}</span>
+      </div>
       <p className="text-[12px] text-muted">
-        Escribe tus propios elementos. La app no sugiere productos ni dosis: solo registra lo que tú pongas.
+        Agrega los que quieras. Completo = todos los obligatorios marcados. Mínimo = todos los esenciales marcados.
+        La app no sugiere productos ni dosis: solo registra lo que tú escribes.
       </p>
-      {items.map((it) => (
-        <div key={it.id} className="card2 p-3 space-y-2">
-          <div className="flex gap-2">
-            <input className="field" value={it.name} placeholder="Nombre" onChange={(e) => update(it.id, { name: e.target.value })} />
-            <button className="icon-btn shrink-0" aria-label="Quitar elemento" onClick={() => onChange(items.filter((x) => x.id !== it.id))}>
-              <Trash2 size={17} />
+
+      {items.map((it, i) => (
+        <div key={it.id} className="card2 p-3 space-y-2.5" data-testid="checklist-item">
+          <div className="flex items-center gap-1.5">
+            <span className="w-6 text-center text-[13px] font-semibold text-muted shrink-0">{i + 1}</span>
+            <input
+              className="field"
+              value={it.name}
+              placeholder="Nombre"
+              aria-label={`Nombre del elemento ${i + 1}`}
+              autoFocus={it.id === justAdded}
+              ref={(el) => {
+                if (el && it.id === justAdded) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+              }}
+              onChange={(e) => update(it.id, { name: e.target.value })}
+            />
+          </div>
+          <input
+            className="field"
+            value={it.note ?? ''}
+            placeholder="Dosis o nota (texto libre)"
+            aria-label={`Dosis o nota del elemento ${i + 1}`}
+            onChange={(e) => update(it.id, { note: e.target.value })}
+          />
+          <div>
+            <p className="text-[12px] text-muted mb-1.5">Momento del día</p>
+            <div className="flex gap-2 flex-wrap">
+              {TIMES_OF_DAY.map((t) => (
+                <button
+                  key={t.value}
+                  type="button"
+                  aria-pressed={it.timeOfDay === t.value}
+                  className={it.timeOfDay === t.value ? 'chip-on' : 'chip-off'}
+                  onClick={() => update(it.id, { timeOfDay: it.timeOfDay === t.value ? '' : t.value })}
+                >
+                  {t.label}
+                </button>
+              ))}
+              {it.timeOfDay && !TIMES_OF_DAY.some((t) => t.value === it.timeOfDay) && (
+                <button type="button" className="chip-on" onClick={() => update(it.id, { timeOfDay: '' })}>
+                  {timeLabel(it.timeOfDay)}
+                </button>
+              )}
+            </div>
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            <button
+              type="button"
+              aria-pressed={it.required}
+              className={it.required ? 'chip-on' : 'chip-off'}
+              onClick={() => update(it.id, { required: !it.required })}
+            >
+              Obligatorio
+            </button>
+            <button
+              type="button"
+              aria-pressed={it.essential}
+              className={it.essential ? 'chip-on' : 'chip-off'}
+              onClick={() => update(it.id, { essential: !it.essential })}
+            >
+              Esencial (mínimo)
             </button>
           </div>
-          <input className="field" value={it.note ?? ''} placeholder="Dosis o nota (texto libre)" onChange={(e) => update(it.id, { note: e.target.value })} />
-          <select className="field" value={it.timeOfDay ?? ''} onChange={(e) => update(it.id, { timeOfDay: e.target.value as ChecklistItem['timeOfDay'] })}>
-            <option value="">Cualquier momento</option>
-            <option value="mañana">Mañana</option>
-            <option value="mediodía">Mediodía</option>
-            <option value="tarde">Tarde</option>
-            <option value="noche">Noche</option>
-          </select>
-          <div className="flex gap-2">
-            <button className={it.required ? 'chip-on' : 'chip-off'} onClick={() => update(it.id, { required: !it.required })}>Obligatorio</button>
-            <button className={it.essential ? 'chip-on' : 'chip-off'} onClick={() => update(it.id, { essential: !it.essential })}>Esencial (mínimo)</button>
+          <div className="flex items-center justify-between pt-1 border-t border-line">
+            <div className="flex">
+              <button
+                type="button"
+                className="icon-btn disabled:opacity-25"
+                aria-label={`Subir elemento ${i + 1}`}
+                disabled={i === 0}
+                onClick={() => onChange(moveItem(items, it.id, -1))}
+              >
+                <ArrowUp size={17} />
+              </button>
+              <button
+                type="button"
+                className="icon-btn disabled:opacity-25"
+                aria-label={`Bajar elemento ${i + 1}`}
+                disabled={i === items.length - 1}
+                onClick={() => onChange(moveItem(items, it.id, 1))}
+              >
+                <ArrowDown size={17} />
+              </button>
+            </div>
+            <button
+              type="button"
+              className="pill text-[#F2A7A7] min-h-[40px] px-3"
+              aria-label={`Borrar elemento ${i + 1}`}
+              onClick={() => onChange(removeItem(items, it.id))}
+            >
+              <Trash2 size={16} /> Borrar
+            </button>
           </div>
         </div>
       ))}
-      <button
-        className="pill-ghost w-full"
-        onClick={() => onChange([...items, { id: uid(), name: '', note: '', timeOfDay: '', required: true, essential: false }])}
-      >
-        <Plus size={16} /> Agregar elemento
-      </button>
+
+      {/* Always reachable: sticks above the bottom navigation while the list is on screen */}
+      <div className="sticky z-10 pt-2 pb-1 bg-card" style={{ bottom: 'calc(64px + var(--safe-bottom))' }}>
+        <button type="button" className="pill-ghost w-full border-violet/60 text-violet-text" onClick={add}>
+          <Plus size={16} /> {items.length ? 'Agregar otro' : 'Agregar elemento'}
+        </button>
+      </div>
+      {items.some((i) => !i.name.trim()) && (
+        <p className="text-[12px] text-dim">Los elementos sin nombre no se guardan.</p>
+      )}
     </div>
   );
 }
