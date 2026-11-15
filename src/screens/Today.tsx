@@ -1,4 +1,4 @@
-import { CalendarPlus, ChevronLeft, ChevronRight, CloudUpload, Flame, Moon, Plus, Repeat, RotateCcw, ClipboardList, Feather } from 'lucide-react';
+import { CalendarDays, CalendarPlus, ChevronLeft, ChevronRight, CloudUpload, Flame, Moon, Plus, Repeat, RotateCcw, ClipboardList, Feather } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { type ActionTarget, HabitActionsSheet } from '../components/HabitActionsSheet';
 import { useLongPress } from '../hooks/useLongPress';
@@ -78,6 +78,9 @@ export function TodayScreen() {
         <div className="flex flex-col items-end gap-1">
           <LevelChip level={points.level} total={points.total} />
           <div className="flex -mr-2">
+            <Link to={`/calendario?v=mes&d=${date}`} className="icon-btn" aria-label="Calendario">
+              <CalendarDays size={20} />
+            </Link>
             <button className="icon-btn" aria-label="Día anterior" onClick={() => go(-1)}>
               <ChevronLeft size={22} />
             </button>

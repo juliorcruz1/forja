@@ -14,6 +14,7 @@ import { StatsScreen } from './screens/Stats';
 import { PointsScreen } from './screens/Points';
 import { FocusScreen } from './screens/Focus';
 import { UrgeScreen } from './screens/Urge';
+import { CalendarScreen } from './screens/Calendar';
 import { PunishScreen } from './screens/Punish';
 import { MoreScreen } from './screens/More';
 import { SettingsScreen } from './screens/Settings';
@@ -80,6 +81,7 @@ function AppRoutes() {
         <Route path="/concentracion" element={<FocusScreen />} />
         <Route path="/ganas" element={<UrgeScreen />} />
         <Route path="/castigos" element={<PunishScreen />} />
+        <Route path="/calendario" element={<CalendarScreen />} />
         <Route path="/mas" element={<MoreScreen />} />
         <Route path="/ajustes" element={<SettingsScreen />} />
         <Route path="/revision" element={<WeeklyReviewScreen />} />
