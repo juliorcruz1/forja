@@ -5,6 +5,7 @@ import { incrementCount, setChecklistAll, setStatus, toggleChecklistItem, toggle
 import { evalDay, type HabitIndex, isDoneStatus, weeklyGoal } from '../domain/habits';
 import { nightInfo } from '../domain/sleep';
 import { timeLabel, validChecked } from '../domain/checklist';
+import { useLongPress } from '../hooks/useLongPress';
 import type { DateKey } from '../lib/dates';
 import { formatTime } from '../lib/dates';
 import type { Settings } from '../db/types';
@@ -31,6 +32,7 @@ export function HabitRow({ habit, date, today, idx, settings, heavy, onOpen }: P
   const items = habit.checklist ?? [];
   const checked = new Set(validChecked(items, log?.checked));
   const checkedCount = items.filter((i) => checked.has(i.id)).length;
+  const press = useLongPress(onOpen);
 
   const sub: string[] = [];
   if (habit.oneOffDate) sub.push(habit.oneOffDate === today ? 'Solo para hoy' : 'Solo este día');
@@ -63,7 +65,12 @@ export function HabitRow({ habit, date, today, idx, settings, heavy, onOpen }: P
     <div className={`card p-3.5 transition ${done ? 'border-line' : ''}`}>
       <div className="flex items-center gap-3">
         <StatusCircle status={status} optional={optional} onClick={onCircle} label={`${done ? 'Desmarcar' : 'Marcar'} ${habit.name}`} />
-        <button className="flex-1 min-w-0 text-left min-h-[44px] flex flex-col justify-center" onClick={onOpen}>
+        <button
+          className="flex-1 min-w-0 text-left min-h-[44px] flex flex-col justify-center"
+          aria-label={`Opciones de ${habit.name}`}
+          aria-haspopup="dialog"
+          {...press}
+        >
           <span className="flex items-center gap-2">
             <HabitIcon name={habit.icon} size={16} className={done ? 'text-violet-text' : 'text-muted'} />
             <span className={`font-medium truncate ${done ? 'text-muted' : ''}`}>{habit.name}</span>

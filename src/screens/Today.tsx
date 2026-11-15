@@ -1,5 +1,8 @@
 import { CalendarPlus, ChevronLeft, ChevronRight, CloudUpload, Flame, Moon, Plus, Repeat, RotateCcw, ClipboardList, Feather } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { type ActionTarget, HabitActionsSheet } from '../components/HabitActionsSheet';
+import { useLongPress } from '../hooks/useLongPress';
+import type { BadHabit } from '../db/types';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { OneOffSheet } from '../components/OneOffSheet';
 import { DayStatusSheet } from '../components/DayStatusSheet';
@@ -22,7 +25,14 @@ export function TodayScreen() {
   const [open, setOpen] = useState<Habit | null>(null);
   const [addMenu, setAddMenu] = useState(false);
   const [oneOff, setOneOff] = useState<{ habit: Habit | null } | null>(null);
+  const [actions, setActions] = useState<ActionTarget | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
   const nav = useNavigate();
+  useEffect(() => {
+    if (!toast) return;
+    const t = window.setTimeout(() => setToast(null), 3500);
+    return () => window.clearTimeout(t);
+  }, [toast]);
   if (!data) return null;
   const { habits, idx, today, settings, badHabits, relapses, dayMeta } = data;
   const qd = params.get('d');
@@ -162,7 +172,7 @@ export function TodayScreen() {
       <div className="space-y-2.5">
         {list.length === 0 && <p className="text-sm text-muted px-1">No hay hábitos programados para este día.</p>}
         {list.map((h) => (
-          <HabitRow key={h.id} habit={h} date={date} today={today} idx={idx} settings={settings} heavy={heavy} onOpen={() => setOpen(h)} />
+          <HabitRow key={h.id} habit={h} date={date} today={today} idx={idx} settings={settings} heavy={heavy} onOpen={() => setActions({ kind: 'good', habit: h })} />
         ))}
       </div>
 
@@ -171,7 +181,7 @@ export function TodayScreen() {
           <SectionHeader title="Extras" right={extrasDone > 0 ? <span className="text-[13px] text-blue-text">+{extrasDone} extra</span> : undefined} />
           <div className="space-y-2.5">
             {extras.map((h) => (
-              <HabitRow key={h.id} habit={h} date={date} today={today} idx={idx} settings={settings} heavy={false} onOpen={() => setOpen(h)} />
+              <HabitRow key={h.id} habit={h} date={date} today={today} idx={idx} settings={settings} heavy={false} onOpen={() => setActions({ kind: 'good', habit: h })} />
             ))}
             {dayOnly.map((h) => (
               <HabitRow
@@ -187,26 +197,31 @@ export function TodayScreen() {
         <>
           <SectionHeader title="Días sin" right={<Link to="/habitos?tab=malos" className="text-[13px] text-violet-text min-h-[44px] flex items-center">Ver</Link>} />
           <div className="grid grid-cols-2 gap-2.5">
-            {activeBad.map((b) => {
-              const s = badHabitStats(b, relapses, today);
-              return (
-                <Link key={b.id} to="/habitos?tab=malos" className="card p-3.5">
-                  <div className="flex items-center gap-2 text-muted text-[12px]">
-                    <HabitIcon name={b.icon} size={14} />
-                    <span className="truncate">{b.name}</span>
-                  </div>
-                  <p className="text-2xl font-bold mt-1">
-                    {s.current}
-                    <span className="text-[13px] font-medium text-muted"> {s.current === 1 ? 'día' : 'días'}</span>
-                  </p>
-                </Link>
-              );
-            })}
+            {activeBad.map((b) => (
+              <BadMini key={b.id} bad={b} days={badHabitStats(b, relapses, today).current} onOpen={() => setActions({ kind: 'bad', bad: b })} />
+            ))}
           </div>
         </>
       )}
 
       <DayStatusSheet habit={open} date={date} idx={idx} onClose={() => setOpen(null)} />
+
+      <HabitActionsSheet
+        target={actions}
+        onClose={() => setActions(null)}
+        onDayRecord={(h) => setOpen(h)}
+        onDone={setToast}
+      />
+
+      {toast && (
+        <div
+          role="status"
+          className="fixed inset-x-0 z-50 flex justify-center px-4 animate-fadeUp pointer-events-none"
+          style={{ bottom: 'calc(76px + var(--safe-bottom))' }}
+        >
+          <p className="max-w-[440px] rounded-2xl bg-card2 border border-line2 px-4 py-3 text-[13px] shadow-lg">{toast}</p>
+        </div>
+      )}
 
       <Sheet open={addMenu} onClose={() => setAddMenu(false)} title="Agregar">
         <div className="space-y-2">
@@ -237,5 +252,22 @@ export function TodayScreen() {
 
       <OneOffSheet open={!!oneOff} date={date} habit={oneOff?.habit} onClose={() => setOneOff(null)} />
     </Screen>
+  );
+}
+
+/** "Días sin" card: tap or long-press opens the actions menu. */
+function BadMini({ bad, days, onOpen }: { bad: BadHabit; days: number; onOpen: () => void }) {
+  const press = useLongPress(onOpen);
+  return (
+    <button className="card p-3.5 text-left active:scale-[0.98] transition" aria-label={`Opciones de ${bad.name}`} aria-haspopup="dialog" {...press}>
+      <span className="flex items-center gap-2 text-muted text-[12px]">
+        <HabitIcon name={bad.icon} size={14} />
+        <span className="truncate">{bad.name}</span>
+      </span>
+      <span className="block text-2xl font-bold mt-1">
+        {days}
+        <span className="text-[13px] font-medium text-muted"> {days === 1 ? 'día' : 'días'}</span>
+      </span>
+    </button>
   );
 }

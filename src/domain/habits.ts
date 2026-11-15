@@ -94,6 +94,10 @@ export interface DayEval {
 export function evalDay(h: Habit, date: DateKey, idx: HabitIndex, today: DateKey): DayEval {
   const status = idx.status(h.id, date);
   const done = isDoneStatus(status);
+  // Archived today after already doing it: the habit leaves Inicio, but that day's record is kept.
+  if (done && !h.oneOffDate && h.archivedAt === date && date <= today && date >= h.startDate) {
+    return { counts: true, done: true, status };
+  }
   if (!isActiveOn(h, date) || status === 'rest' || date > today) return { counts: false, done: false, status };
   if (h.oneOffDate) return { counts: false, done, status }; // one-day extras never count
 

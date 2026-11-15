@@ -163,26 +163,49 @@ async function patchHabit(id: string, fn: (h: Habit) => Partial<Habit>) {
 export const pauseHabit = (id: string, today = todayKey()) =>
   patchHabit(id, (h) => ({ lifecycle: 'paused', pauses: [...h.pauses, { from: today }] }));
 
+/** Ends any open pause the day before `today` (dropping same-day pauses, which cover no days). */
+const closePauses = (h: Habit, today: DateKey) =>
+  h.pauses
+    .map((p) => (p.to ? p : { ...p, to: addDaysSafe(today, -1) }))
+    .filter((p) => p.to! >= p.from);
+
 export const resumeHabit = (id: string, today = todayKey()) =>
-  patchHabit(id, (h) => ({
-    lifecycle: 'active',
-    pauses: h.pauses
-      .map((p) => (p.to ? p : { ...p, to: addDaysSafe(today, -1) }))
-      .filter((p) => p.to! >= p.from), // paused and resumed the same day: no paused days
-  }));
+  patchHabit(id, (h) => ({ lifecycle: 'active', pauses: closePauses(h, today) }));
 
+/**
+ * Archive: the habit leaves Inicio from `today` on, but every record stays, so
+ * its history and statistics (and anything derived later) are kept.
+ */
 export const archiveHabit = (id: string, today = todayKey()) =>
-  patchHabit(id, () => ({ lifecycle: 'archived', archivedAt: today }));
+  patchHabit(id, (h) => ({ lifecycle: 'archived', archivedAt: today, pauses: closePauses(h, today) }));
 
-export const unarchiveHabit = (id: string) =>
-  patchHabit(id, () => ({ lifecycle: 'active', archivedAt: undefined }));
+/**
+ * Restore an archived habit. The archived days become a pause, so they are
+ * not counted as misses and do not break streaks.
+ */
+export const restoreHabit = (id: string, today = todayKey()) =>
+  patchHabit(id, (h) => {
+    const pauses = [...h.pauses];
+    if (h.archivedAt && h.archivedAt <= addDaysSafe(today, -1)) {
+      pauses.push({ from: h.archivedAt, to: addDaysSafe(today, -1) });
+    }
+    return { lifecycle: 'active', archivedAt: undefined, pauses };
+  });
 
+/** Deletes the habit and every record that belongs to it (logs and week plans). */
 export async function deleteHabit(id: string) {
   await db.transaction('rw', db.habits, db.habitLogs, db.weekPlans, async () => {
     await db.habits.delete(id);
     await db.habitLogs.where('habitId').equals(id).delete();
     await db.weekPlans.where('habitId').equals(id).delete();
   });
+}
+
+/** How many records a delete would remove (for the confirmation message). */
+export async function habitRecordCount(id: string, kind: 'good' | 'bad') {
+  return kind === 'good'
+    ? db.habitLogs.where('habitId').equals(id).count()
+    : db.relapses.where('badHabitId').equals(id).count();
 }
 
 export async function moveHabit(id: string, dir: -1 | 1) {

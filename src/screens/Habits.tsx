@@ -1,4 +1,5 @@
-import { ChevronLeft, ChevronRight, Flame, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Flame, Play, Plus, RotateCcw } from 'lucide-react';
+import { restoreHabit, resumeHabit } from '../db/repo';
 import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { BadHabitCard } from '../components/BadHabitCard';
@@ -11,7 +12,7 @@ import type { Habit, HabitLifecycle } from '../db/types';
 import { habitStreak, weeklyGoal } from '../domain/habits';
 import { habitTally } from '../domain/stats';
 import { useData } from '../hooks/useData';
-import { addDays, addMonths, type DateKey, formatMonth, monthStart } from '../lib/dates';
+import { addDays, addMonths, type DateKey, formatMonth, formatShort, monthStart } from '../lib/dates';
 
 const FILTERS: { value: HabitLifecycle; label: string }[] = [
   { value: 'active', label: 'Activos' },
@@ -152,8 +153,13 @@ function HabitRowCard({ habit }: { habit: Habit }) {
   const { idx, today } = useData()!;
   const t = habitTally(habit, idx, addDays(today, -29), today, today);
   const s = habitStreak(habit, idx, today);
+  const inactive = habit.lifecycle !== 'active';
   return (
-    <Link to={`/habitos/${habit.id}`} className="card p-4 flex items-center gap-3 active:scale-[0.99] transition">
+    <div className={inactive ? 'card overflow-hidden' : ''}>
+    <Link
+      to={`/habitos/${habit.id}`}
+      className={`${inactive ? 'border-b border-line' : 'card'} p-4 flex items-center gap-3 active:scale-[0.99] transition`}
+    >
       <span className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${habit.required ? 'bg-violet-soft text-violet-text' : 'bg-blue-soft text-blue-text'}`}>
         <HabitIcon name={habit.icon} />
       </span>
@@ -175,6 +181,21 @@ function HabitRowCard({ habit }: { habit: Habit }) {
         )}
       </div>
     </Link>
+    {inactive && (
+      <div className="flex items-center justify-between gap-2 px-4 py-2">
+        <span className="text-[12px] text-muted">
+          {habit.lifecycle === 'archived' && habit.archivedAt ? `Archivado el ${formatShort(habit.archivedAt)}` : 'En pausa'}
+        </span>
+        <button
+          className="pill-ghost min-h-[40px] text-violet-text"
+          onClick={() => (habit.lifecycle === 'archived' ? restoreHabit(habit.id) : resumeHabit(habit.id))}
+        >
+          {habit.lifecycle === 'archived' ? <RotateCcw size={15} /> : <Play size={15} />}
+          {habit.lifecycle === 'archived' ? 'Restaurar' : 'Reanudar'}
+        </button>
+      </div>
+    )}
+    </div>
   );
 }
 

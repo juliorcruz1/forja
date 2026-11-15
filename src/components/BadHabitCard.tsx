@@ -1,9 +1,9 @@
-import { History, Pencil, Trash2 } from 'lucide-react';
+import { History, Pencil, Play, RotateCcw, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { BRAND } from '../config/brand';
 import type { BadHabit, Relapse } from '../db/types';
-import { addRelapse, deleteRelapse, updateRelapse } from '../db/repo';
+import { addRelapse, deleteRelapse, setBadHabitLifecycle, updateRelapse } from '../db/repo';
 import { badHabitStats, badStrip, relapsesOf } from '../domain/bad';
 import { useData } from '../hooks/useData';
 import { formatLong, formatShort } from '../lib/dates';
@@ -96,6 +96,17 @@ export function BadHabitCard({ bad }: { bad: BadHabit }) {
         </div>
       )}
       {bad.lifecycle === 'active' && !justRelapsed && <p className="text-[12px] text-dim mt-3">{BRAND.relapseBody}</p>}
+      {bad.lifecycle !== 'active' && (
+        <div className="flex items-center justify-between gap-2 mt-4 pt-3 border-t border-line">
+          <span className="text-[12px] text-muted">
+            {bad.lifecycle === 'archived' ? `Archivado${bad.archivedAt ? ` el ${formatShort(bad.archivedAt)}` : ''}` : 'En pausa'}
+          </span>
+          <button className="pill-ghost min-h-[40px] text-violet-text" onClick={() => setBadHabitLifecycle(bad.id, 'active')}>
+            {bad.lifecycle === 'archived' ? <RotateCcw size={15} /> : <Play size={15} />}
+            {bad.lifecycle === 'archived' ? 'Restaurar' : 'Reanudar'}
+          </button>
+        </div>
+      )}
 
       <RelapseSheet
         open={relapseOpen}

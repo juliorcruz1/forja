@@ -5,7 +5,7 @@ import { HABIT_ICONS, HabitIcon } from '../components/icons';
 import { Card, Screen, Sheet, Toggle } from '../components/ui';
 import type { ChecklistItem, Frequency, Habit, HabitKind, Weekday } from '../db/types';
 import {
-  archiveHabit, deleteHabit, moveHabit, pauseHabit, resumeHabit, saveHabit, unarchiveHabit,
+  archiveHabit, deleteHabit, moveHabit, pauseHabit, restoreHabit, resumeHabit, saveHabit,
 } from '../db/repo';
 import { useData } from '../hooks/useData';
 import { WEEKDAY_LETTER } from '../lib/dates';
@@ -220,7 +220,7 @@ export function HabitFormScreen() {
             {existing.lifecycle !== 'archived' ? (
               <button className="pill-ghost" onClick={() => archiveHabit(existing.id)}>Archivar</button>
             ) : (
-              <button className="pill-ghost" onClick={() => unarchiveHabit(existing.id)}>Restaurar</button>
+              <button className="pill-ghost" onClick={() => restoreHabit(existing.id)}>Restaurar</button>
             )}
           </div>
           <p className="text-[12px] text-dim mt-3">

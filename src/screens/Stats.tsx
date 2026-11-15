@@ -29,7 +29,8 @@ export function StatsScreen() {
   const delta = s.overall.pct !== null && s.previous.pct !== null ? s.overall.pct - s.previous.pct : null;
   const cur = overallStreak(habits, idx, today);
   const best = bestOverallStreak(habits, idx, today);
-  const activeBad = badHabits.filter((b) => b.lifecycle !== 'archived');
+  // Archived bad habits keep their statistics (shown with a label)
+  const activeBad = badHabits;
   const extrasTotal = s.extras.reduce((a, e) => a + e.days, 0) + s.oneOffDone;
 
   return (
@@ -98,6 +99,7 @@ export function StatsScreen() {
                   <span className="flex items-center gap-2 min-w-0">
                     <HabitIcon name={habit.icon} size={15} className="text-muted" />
                     <span className="truncate">{habit.name}</span>
+                    {habit.lifecycle === 'archived' && <span className="text-[11px] text-dim shrink-0">Archivado</span>}
                   </span>
                   <span className="text-muted shrink-0">
                     {tally.pct === null ? '—' : `${tally.pct}%`}
@@ -148,6 +150,9 @@ export function StatsScreen() {
                 <div key={b.id} className="card2 p-3">
                   <p className="text-[14px] font-medium flex items-center gap-2">
                     <HabitIcon name={b.icon} size={15} className="text-muted" /> {b.name}
+                    {b.lifecycle !== 'active' && (
+                      <span className="text-[11px] text-dim">{b.lifecycle === 'archived' ? 'Archivado' : 'En pausa'}</span>
+                    )}
                   </p>
                   <div className="grid grid-cols-4 gap-2 mt-2 text-center">
                     <MiniStat label="Días sin" value={st.current} />
