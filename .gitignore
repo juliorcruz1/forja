@@ -10,3 +10,4 @@ respaldo*.json
 
 # Local editor/agent config
 .claude/
+capturas/
