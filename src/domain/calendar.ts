@@ -4,7 +4,7 @@
  * calendar simply re-derives.
  */
 import type { BadHabit, DayMeta, DaySchedule, Habit, Joker, Relapse, Settings, Weekday } from '../db/types';
-import { type DateKey, monthDays, weekday, weekStart } from '../lib/dates';
+import { type DateKey, monthDays, weekDays, weekday, weekStart } from '../lib/dates';
 import { dayProgress, type HabitIndex, isActiveOn, isDoneStatus, plannedDaysFor } from './habits';
 import type { Debt, PunishResult } from './punish';
 
@@ -156,4 +156,16 @@ export function summarizeDays(days: DayInfo[]): PeriodSummary {
 export function monthInfo(month: DateKey, input: CalendarInput) {
   const days = monthDays(month).map((d) => dayInfo(d, input));
   return { days, lead: weekday(days[0].date), summary: summarizeDays(days) };
+}
+
+export function weekInfo(ws: DateKey, input: CalendarInput) {
+  const days = weekDays(ws).map((d) => dayInfo(d, input));
+  return { days, summary: summarizeDays(days) };
+}
+
+/** Twelve months of the year of `date`. */
+export function yearInfo(date: DateKey, input: CalendarInput) {
+  const y = date.slice(0, 4);
+  const months = Array.from({ length: 12 }, (_, i) => monthInfo(`${y}-${String(i + 1).padStart(2, '0')}-01`, input));
+  return { months, summary: summarizeDays(months.flatMap((m) => m.days)) };
 }

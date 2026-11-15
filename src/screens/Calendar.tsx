@@ -1,29 +1,33 @@
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useMemo } from 'react';
+import { ChevronLeft, ChevronRight, Pencil } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { CalendarLegend, DayMarks, DayShape, KIND_LABEL } from '../components/CalendarBits';
+import { DayStatusSheet } from '../components/DayStatusSheet';
 import { HabitIcon } from '../components/icons';
 import { Card, Screen, Segmented } from '../components/ui';
-import type { LogStatus } from '../db/types';
-import { type CalendarInput, dayInfo, monthInfo } from '../domain/calendar';
-import { habitsForDay, isScheduledByFrequency } from '../domain/habits';
+import type { Habit, LogStatus } from '../db/types';
+import { type CalendarInput, dayInfo, monthInfo, weekInfo, yearInfo } from '../domain/calendar';
+import { habitsForDay, isScheduledByFrequency, weeklyGoal } from '../domain/habits';
 import { PUNISH_LABEL } from '../domain/punish';
 import { useData } from '../hooks/useData';
 import {
-  addDays, addMonths, type DateKey, formatLong, formatMonth, formatTime, isValidKey, monthStart, WEEKDAY_LETTER,
+  addDays, addMonths, type DateKey, formatLong, formatMonth, formatShort, formatTime, isValidKey, MONTH_NAMES, monthStart,
+  WEEKDAY_LETTER, WEEKDAY_NAMES, weekStart,
 } from '../lib/dates';
 
-export type CalView = 'dia' | 'mes';
+export type CalView = 'dia' | 'semana' | 'mes' | 'anio';
 const VIEWS: { value: CalView; label: string }[] = [
   { value: 'dia', label: 'Día' },
+  { value: 'semana', label: 'Semana' },
   { value: 'mes', label: 'Mes' },
+  { value: 'anio', label: 'Año' },
 ];
 
 export const STATUS_LABEL: Record<LogStatus, string> = {
   done: 'Completo', min: 'Mínimo', pending: 'Pendiente', skipped: 'Saltado', rest: 'Descanso',
 };
 
-/** Calendar: Día / Mes (Semana and Año come next). State lives in the URL: ?v=mes&d=YYYY-MM-DD */
+/** Calendar: Día / Semana / Mes / Año. State lives in the URL: ?v=mes&d=YYYY-MM-DD */
 export function CalendarScreen() {
   const data = useData();
   const [params, setParams] = useSearchParams();
@@ -42,9 +46,17 @@ export function CalendarScreen() {
   const date = qd && isValidKey(qd) ? qd : today;
   const go = (next: { v?: CalView; d?: DateKey }) =>
     setParams({ v: next.v ?? v, d: next.d ?? date }, { replace: true });
-  const step = (n: number) => go({ d: v === 'mes' ? addMonths(monthStart(date), n) : addDays(date, n) });
-  const label = v === 'mes' ? formatMonth(date) : formatLong(date);
-  const atToday = v === 'mes' ? monthStart(date) === monthStart(today) : date === today;
+  const step = (n: number) =>
+    go({
+      d: v === 'mes' ? addMonths(monthStart(date), n) : v === 'anio' ? addMonths(monthStart(date), 12 * n) : addDays(date, v === 'semana' ? 7 * n : n),
+    });
+  const ws = weekStart(date);
+  const label =
+    v === 'mes' ? formatMonth(date) : v === 'anio' ? date.slice(0, 4) : v === 'semana' ? `${formatShort(ws)} – ${formatShort(addDays(ws, 6))}` : formatLong(date);
+  const atToday =
+    v === 'mes' ? monthStart(date) === monthStart(today)
+      : v === 'anio' ? date.slice(0, 4) === today.slice(0, 4)
+        : v === 'semana' ? ws === weekStart(today) : date === today;
 
   return (
     <Screen title="Calendario" back>
@@ -64,6 +76,8 @@ export function CalendarScreen() {
 
       {v === 'mes' && <MonthView month={date} input={input} onDay={(d) => go({ v: 'dia', d })} />}
       {v === 'dia' && <DayView date={date} input={input} />}
+      {v === 'semana' && <WeekView ws={ws} input={input} onDay={(d) => go({ v: 'dia', d })} />}
+      {v === 'anio' && <YearView date={date} input={input} onMonth={(d) => go({ v: 'mes', d })} />}
     </Screen>
   );
 }
@@ -138,6 +152,7 @@ export function DayView({ date, input }: { date: DateKey; input: CalendarInput }
   const relapses = data.relapses.filter((r) => r.date === date);
   const badName = (id: string) => data.badHabits.find((b) => b.id === id)?.name ?? 'Hábito malo';
   const future = date > input.today;
+  const [editing, setEditing] = useState<Habit | null>(null);
 
   const row = (h: (typeof required)[number], tag?: string) => {
     const scheduled = h.frequency.type === 'weekly' || isScheduledByFrequency(h, date) || !!h.oneOffDate;
@@ -145,7 +160,14 @@ export function DayView({ date, input }: { date: DateKey; input: CalendarInput }
     const mark = d.weekly.find((w) => w.habitId === h.id);
     const text = !scheduled && st === 'pending' ? 'No tocaba' : future && st === 'pending' ? (mark?.planned ? 'Planeado' : '—') : STATUS_LABEL[st];
     return (
-      <li key={h.id} className="flex items-center gap-3 px-4 py-2.5 min-h-[52px]">
+      <li key={h.id}>
+        <button
+          type="button"
+          disabled={future}
+          onClick={() => setEditing(h)}
+          className="w-full text-left flex items-center gap-3 px-4 py-2.5 min-h-[52px] active:bg-card2"
+          aria-label={`${h.name}: ${text}${future ? '' : '. Toca para corregir'}`}
+        >
         <span className="w-8 h-8 rounded-xl bg-card2 flex items-center justify-center text-muted shrink-0">
           <HabitIcon name={h.icon} size={16} />
         </span>
@@ -156,6 +178,8 @@ export function DayView({ date, input }: { date: DateKey; input: CalendarInput }
           )}
         </div>
         <span className={`text-[0.8125rem] shrink-0 ${st === 'done' ? 'text-violet-text' : st === 'min' ? 'text-blue-text' : 'text-muted'}`}>{text}</span>
+          {!future && <Pencil size={14} className="text-dim shrink-0" />}
+        </button>
       </li>
     );
   };
@@ -215,9 +239,136 @@ export function DayView({ date, input }: { date: DateKey; input: CalendarInput }
         </Card>
       )}
 
+      {!future && (
+        <p className="text-[0.75rem] text-dim px-1">
+          Toca un hábito para corregir ese día. Rachas, puntos, castigos y medallas se recalculan solos.
+        </p>
+      )}
       {!future && date !== input.today && (
         <Link to={`/hoy?d=${date}`} className="pill-ghost w-full">Abrir este día en Inicio</Link>
       )}
+      {editing && <DayStatusSheet habit={editing} date={date} idx={data.idx} onClose={() => setEditing(null)} />}
+    </>
+  );
+}
+
+function WeekView({ ws, input, onDay }: { ws: DateKey; input: CalendarInput; onDay: (d: DateKey) => void }) {
+  const w = useMemo(() => weekInfo(ws, input), [ws, input]);
+  const end = addDays(ws, 6);
+  const weekly = input.habits.filter(
+    (h) => h.frequency.type === 'weekly' && h.required && !h.oneOffDate && h.startDate <= end && (!h.archivedAt || h.archivedAt > ws),
+  );
+  const s = w.summary;
+  return (
+    <>
+      <ul className="card divide-y divide-line">
+        {w.days.map((d, i) => (
+          <li key={d.date}>
+            <button
+              type="button"
+              onClick={() => onDay(d.date)}
+              className="w-full text-left flex items-center gap-3 px-4 py-2.5 min-h-[60px] active:bg-card2"
+              aria-label={`${formatLong(d.date)}: ${KIND_LABEL[d.kind]}`}
+            >
+              <DayShape kind={d.kind} today={d.isToday} className="w-9 h-9 text-[0.8125rem] shrink-0">
+                {Number(d.date.slice(8))}
+              </DayShape>
+              <div className="flex-1 min-w-0">
+                <p className="text-[0.9375rem] capitalize">{WEEKDAY_NAMES[i]}</p>
+                <p className="text-[0.75rem] text-muted truncate">
+                  {[
+                    d.work ? `Trabajo ${formatTime(d.work.start)}` : 'Libre',
+                    ...d.weekly.map((m) => `${m.name} ${m.done ? 'hecho' : 'planeado'}`),
+                    d.joker ? 'Comodín' : null,
+                    d.heavy ? 'Día pesado' : null,
+                  ].filter(Boolean).join(' · ')}
+                </p>
+              </div>
+              <span className="text-[0.8125rem] text-muted shrink-0">
+                {d.kind === 'future' ? '' : d.total ? `${d.done}/${d.total}` : d.kind === 'rest' ? 'Descanso' : '—'}
+              </span>
+              <ChevronRight size={16} className="text-dim shrink-0" />
+            </button>
+          </li>
+        ))}
+      </ul>
+      <Card>
+        <div className="grid grid-cols-4 gap-2 text-center">
+          <Stat n={s.perfect} label="Perfectos" />
+          <Stat n={s.partial} label="Parciales" />
+          <Stat n={s.missed} label="Sin cumplir" />
+          <Stat n={s.rest} label="Descanso" />
+        </div>
+        {weekly.map((h) => {
+          const g = weeklyGoal(h, input.idx, input.today, ws);
+          return g.target > 0 ? (
+            <p key={h.id} className="text-[0.8125rem] text-muted mt-3">
+              {h.name}: {g.count} de {g.target}
+              {g.planned.length ? ` · planeado ${g.planned.map((p) => WEEKDAY_LETTER[p]).join(' ')}` : ''}
+              {g.state === 'met' ? ' · meta cumplida' : ''}
+            </p>
+          ) : null;
+        })}
+      </Card>
+      <div className="px-1">
+        <CalendarLegend weeklyName={weekly[0]?.name} />
+        <p className="text-[0.75rem] text-dim mt-2">Toca un día para verlo o corregirlo.</p>
+      </div>
+    </>
+  );
+}
+
+/** Year mini-calendar: same shape language at a small size (circle = cumplido/parcial, square = sin cumplir). */
+const YEAR_SHAPE: Record<string, string> = {
+  perfect: 'bg-violet rounded-full',
+  partial: 'bg-blue-soft border border-blue rounded-full',
+  open: 'border border-dashed border-violet rounded-full',
+  missed: 'bg-dim/70 rounded-[2px]',
+  rest: 'border border-dashed border-dim rounded-full',
+  empty: 'bg-card2 rounded-[2px]',
+  future: 'bg-card2/50 rounded-[2px]',
+};
+
+function YearView({ date, input, onMonth }: { date: DateKey; input: CalendarInput; onMonth: (d: DateKey) => void }) {
+  const year = date.slice(0, 4);
+  const y = useMemo(() => yearInfo(`${year}-01-01`, input), [year, input]);
+  const s = y.summary;
+  return (
+    <>
+      <Card>
+        <div className="grid grid-cols-4 gap-2 text-center">
+          <Stat n={s.perfect} label="Perfectos" />
+          <Stat n={s.partial} label="Parciales" />
+          <Stat n={s.missed} label="Sin cumplir" />
+          <Stat n={s.rest} label="Descanso" />
+        </div>
+      </Card>
+      <div className="grid grid-cols-2 gap-3">
+        {y.months.map((m, i) => (
+          <button
+            key={i}
+            type="button"
+            onClick={() => onMonth(m.days[0].date)}
+            className="card p-3 text-left active:scale-[0.99] transition"
+            aria-label={`${MONTH_NAMES[i]}: ${m.summary.perfect} días perfectos`}
+          >
+            <span className="text-[0.8125rem] font-semibold capitalize mb-2 flex justify-between">
+              {MONTH_NAMES[i]}
+              {m.summary.perfect > 0 && <span className="text-violet-text font-normal">{m.summary.perfect}</span>}
+            </span>
+            <span className="grid grid-cols-7 gap-[3px]">
+              {Array.from({ length: m.lead }, (_, k) => <span key={`l${k}`} />)}
+              {m.days.map((d) => (
+                <span key={d.date} className={`aspect-square ${YEAR_SHAPE[d.kind]} ${d.isToday ? 'ring-1 ring-ink' : ''}`} />
+              ))}
+            </span>
+          </button>
+        ))}
+      </div>
+      <div className="px-1">
+        <CalendarLegend />
+        <p className="text-[0.75rem] text-dim mt-2">Toca un mes para abrirlo.</p>
+      </div>
     </>
   );
 }

@@ -1,7 +1,9 @@
 import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { db } from './db';
-import { emptyJar, payDebt, resetDebts, saveHabit, unpayDebt, updateSettings, ensureSeeded } from './repo';
+import { deleteHabit, emptyJar, payDebt, resetDebts, saveHabit, setStatus, unpayDebt, updateSettings, ensureSeeded } from './repo';
+import { dayInfo } from '../domain/calendar';
+import { HabitIndex } from '../domain/habits';
 import { computeDebts } from '../domain/punish';
 import { normalizeSettings } from '../config/defaults';
 
@@ -54,5 +56,37 @@ describe('debts in the database', () => {
     expect(r.jar.total).toBe(10);
     expect(r.jar.empties).toHaveLength(1);
     expect(r.jar.empties[0]).toMatchObject({ amount: 6, throughDate: '2026-11-11' });
+  });
+});
+
+describe('editing past days recalculates everything derived', () => {
+  it('marking a missed day as done removes its debt and changes the calendar', async () => {
+    await setup();
+    const h = (await db.habits.toArray())[0];
+    let r = await debtsAt('2026-11-12');
+    expect(r.pending.map((d) => d.date)).toEqual(['2026-11-09', '2026-11-10']);
+    await setStatus(h.id, '2026-11-09', 'done');
+    r = await debtsAt('2026-11-12');
+    // 9 Nov is fine now; 10 and 11 become the pending ones
+    expect(r.pending.map((d) => d.date)).toEqual(['2026-11-10', '2026-11-11']);
+    const cal = async (d: string) =>
+      dayInfo(d, { habits: await db.habits.toArray(), idx: new HabitIndex(await db.habitLogs.toArray()), today: '2026-11-12', settings: normalizeSettings((await db.settings.get('settings'))!) }).kind;
+    expect(await cal('2026-11-09')).toBe('perfect');
+    // marking it as rest: no debt, calendar shows rest
+    await setStatus(h.id, '2026-11-10', 'rest');
+    expect((await debtsAt('2026-11-12')).debts.map((d) => d.date)).toEqual(['2026-11-11']);
+    expect(await cal('2026-11-10')).toBe('rest');
+  });
+
+  it('deleting a habit removes its debts; paid ones stay in the history as they were', async () => {
+    await setup();
+    const h = (await db.habits.toArray())[0];
+    const r = await debtsAt('2026-11-11');
+    await payDebt(r.pending[0], new Date(2026, 10, 11, 9));
+    await deleteHabit(h.id);
+    const after = await debtsAt('2026-11-11');
+    expect(after.pending).toEqual([]);
+    expect(after.history).toHaveLength(1);
+    expect(after.history[0]).toMatchObject({ date: '2026-11-09', status: 'paid', orphan: true });
   });
 });

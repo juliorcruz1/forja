@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { DaySchedule, Weekday } from '../db/types';
-import { type CalendarInput, dayInfo, monthInfo } from './calendar';
+import { type CalendarInput, dayInfo, monthInfo, weekInfo, yearInfo } from './calendar';
 import { HabitIndex } from './habits';
 import { habit, log, logs, plan } from './testUtils';
 
@@ -103,5 +103,24 @@ describe('month view', () => {
     expect(dayInfo('2026-11-12', after).kind).toBe('perfect');
     const removed = input([]);
     expect(dayInfo('2026-11-12', removed).kind).toBe('missed');
+  });
+});
+
+describe('week and year views', () => {
+  it('week: Monday to Sunday with its own summary', () => {
+    const l = logs('read', { '2026-11-09': 'done' }).concat(logs('water', { '2026-11-09': 'done' }));
+    const w = weekInfo('2026-11-09', input(l));
+    expect(w.days.map((d) => d.date)).toEqual(['2026-11-09', '2026-11-10', '2026-11-11', '2026-11-12', '2026-11-13', '2026-11-14', '2026-11-15']);
+    expect(w.summary).toMatchObject({ perfect: 1, missed: 3 });
+    expect(w.days[5].kind).toBe('future');
+  });
+
+  it('year: 12 months, totals add up to the months', () => {
+    const l = logs('read', { '2026-11-09': 'done' }).concat(logs('water', { '2026-11-09': 'done' }));
+    const y = yearInfo('2026-05-20', input(l));
+    expect(y.months).toHaveLength(12);
+    expect(y.months.reduce((a, m) => a + m.days.length, 0)).toBe(365);
+    expect(y.summary.perfect).toBe(1);
+    expect(y.summary.missed).toBe(y.months.reduce((a, m) => a + m.summary.missed, 0));
   });
 });
