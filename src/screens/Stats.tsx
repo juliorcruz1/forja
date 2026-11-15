@@ -9,6 +9,7 @@ import { observation, type Period, type PeriodKind, periodFor, periodStats } fro
 import { useData } from '../hooks/useData';
 import { formatPts, summarize } from '../domain/points';
 import { isLimitHabit, limitOf, usageTrend } from '../domain/social';
+import { focusTotals, formatMinutes } from '../domain/focus';
 import type { BadHabit } from '../db/types';
 import { LevelBar } from '../components/PointsBits';
 import { MONTH_NAMES, minKey, WEEKDAY_LETTER, weekday } from '../lib/dates';
@@ -83,6 +84,8 @@ export function StatsScreen() {
       </div>
 
       <PointsCard period={period} />
+
+      <FocusCard period={period} />
 
       <div className="rounded-card border p-4 flex gap-3" style={{ background: '#1A1530', borderColor: '#3A2F66' }}>
         <Lightbulb size={20} className="text-night-text shrink-0 mt-0.5" />
@@ -179,7 +182,7 @@ export function StatsScreen() {
   );
 }
 
-function MiniStat({ label, value }: { label: string; value: number }) {
+function MiniStat({ label, value }: { label: string; value: number | string }) {
   return (
     <div>
       <p className="text-lg font-bold">{value}</p>
@@ -337,5 +340,27 @@ function UsageStats({ bad, period }: { bad: BadHabit; period: Period }) {
       </div>
       {t.logged === 0 && <p className="text-[11px] text-dim mt-2">Sin minutos anotados en este periodo.</p>}
     </div>
+  );
+}
+
+/** Focused time in the period (completed sessions only). */
+function FocusCard({ period }: { period: Period }) {
+  const { focusSessions, today } = useData()!;
+  const to = minKey(period.to, today);
+  if (to < period.from) return null;
+  const t = focusTotals(focusSessions, period.from, to);
+  const perDay = t.days.length ? Math.round(t.minutes / t.days.length) : 0;
+  return (
+    <Card>
+      <div className="flex items-baseline justify-between">
+        <p className="font-semibold">Concentración</p>
+        <Link to="/concentracion" className="text-[13px] text-violet-text min-h-[32px] inline-flex items-center">Abrir</Link>
+      </div>
+      <div className="grid grid-cols-3 gap-2 mt-2 text-center">
+        <MiniStat label="Tiempo total" value={formatMinutes(t.minutes)} />
+        <MiniStat label="Sesiones" value={t.sessions} />
+        <MiniStat label="Promedio diario" value={formatMinutes(perDay)} />
+      </div>
+    </Card>
   );
 }

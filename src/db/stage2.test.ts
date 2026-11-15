@@ -69,3 +69,48 @@ describe('phone-free window records', () => {
     expect(all[0].endedAt).toBeDefined();
   });
 });
+
+import { cancelFocus, settleFocus, startFocus } from './repo';
+import { expiredRunning, focusTotals, formatClock, remainingMs, runningSession } from '../domain/focus';
+
+describe('focus sessions (time from start and end timestamps)', () => {
+  const at = (h: number, m = 0) => new Date(2026, 10, 17, h, m);
+
+  it('remaining time is computed from the start time, not a running counter', async () => {
+    const f = await startFocus('Clips', 25, at(10, 0));
+    expect(f).toMatchObject({ date: '2026-11-17', status: 'running', plannedMin: 25 });
+    expect(remainingMs(f, at(10, 10))).toBe(15 * 60000);
+    expect(formatClock(remainingMs(f, at(10, 10)))).toBe('15:00');
+    // app closed and reopened after the end: still exactly 25 min, never more
+    expect(remainingMs(f, at(13, 0))).toBe(0);
+    expect(expiredRunning([f], at(10, 30))).toHaveLength(1);
+  });
+
+  it('a session that ended while the app was closed is settled as done on reopen', async () => {
+    const f = await startFocus('Lectura', 45, at(9, 0));
+    expect(await settleFocus(at(9, 30))).toBe(0); // still running
+    expect(await settleFocus(at(11, 0))).toBe(1);
+    const done = (await db.focusSessions.get(f.id))!;
+    expect(done.status).toBe('done');
+    expect(done.endAt).toBe(new Date(at(9, 45)).toISOString()); // planned end, not reopen time
+    expect(focusTotals(await db.focusSessions.toArray(), '2026-11-17', '2026-11-17')).toMatchObject({ minutes: 45, sessions: 1 });
+  });
+
+  it('cancelling early does not count (and never subtracts)', async () => {
+    const f = await startFocus('Clips', 60, at(15));
+    await cancelFocus(f.id, at(15, 20));
+    const c = (await db.focusSessions.get(f.id))!;
+    expect(c.status).toBe('cancelled');
+    expect(focusTotals([c], '2026-11-17', '2026-11-17').minutes).toBe(0);
+    expect(await settleFocus(at(18))).toBe(0);
+  });
+
+  it('only one session runs at a time', async () => {
+    const a = await startFocus('A', 25, at(8));
+    const b = await startFocus('B', 25, at(8, 5));
+    expect(b.id).toBe(a.id);
+    expect(runningSession(await db.focusSessions.toArray(), at(8, 6))?.label).toBe('A');
+    const c = await startFocus('C', 25, at(8, 30)); // A already finished
+    expect(c.id).not.toBe(a.id);
+  });
+});

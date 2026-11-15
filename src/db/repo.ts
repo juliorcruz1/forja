@@ -1,12 +1,13 @@
 /** All writes go through here. UI never touches Dexie tables directly. */
 import { db } from './db';
 import type {
-  BadHabit, Habit, HabitLog, JournalEntry, LogStatus, Relapse, Settings, Weekday, WindowKind, WindowLog,
+  BadHabit, FocusSession, Habit, HabitLog, JournalEntry, LogStatus, Relapse, Settings, Weekday, WindowKind,
+  WindowLog,
 } from './types';
 import { defaultHabits, defaultSettings, defaultSocialHabit, normalizeSettings } from '../config/defaults';
 import { counterStatus } from '../domain/habits';
 import { checklistStatus, validChecked } from '../domain/checklist';
-import { addDays as addDaysSafe, type DateKey, todayKey, weekStart as weekStartOf } from '../lib/dates';
+import { addDays as addDaysSafe, type DateKey, todayKey, toKey as toKeyDate, weekStart as weekStartOf } from '../lib/dates';
 import { nowIso, uid } from '../lib/id';
 
 export async function ensureSeeded(today: DateKey = todayKey()): Promise<void> {
@@ -367,3 +368,50 @@ export async function finishWindow(id: string, kept: boolean, now: Date = new Da
 }
 
 export const deleteWindowLog = (id: string) => db.windowLogs.delete(id);
+
+// ---------------- Stage 2: focus sessions ----------------
+
+/** Starts a session. Only one runs at a time: if one is running, it is returned instead. */
+export async function startFocus(label: string, plannedMin: number, now: Date = new Date()): Promise<FocusSession> {
+  return db.transaction('rw', db.focusSessions, async () => {
+    const running = (await db.focusSessions.where('status').equals('running').toArray()).find(
+      (f) => new Date(f.startAt).getTime() + f.plannedMin * 60000 > now.getTime(),
+    );
+    if (running) return running;
+    const t = nowIso();
+    const f: FocusSession = {
+      id: uid(), date: toKeyDate(now), label: label.trim() || 'Concentración', plannedMin,
+      startAt: now.toISOString(), status: 'running', createdAt: t, updatedAt: t,
+    };
+    await db.focusSessions.put(f);
+    return f;
+  });
+}
+
+/** Cancel before time: never subtracts, it just doesn't count. */
+export async function cancelFocus(id: string, now: Date = new Date()) {
+  const f = await db.focusSessions.get(id);
+  if (!f || f.status !== 'running') return;
+  await db.focusSessions.put({ ...f, status: 'cancelled', endAt: now.toISOString(), updatedAt: nowIso() });
+}
+
+/**
+ * Marks every running session whose planned end has passed as done (end = planned end).
+ * Called when the app opens or returns to the foreground.
+ */
+export async function settleFocus(now: Date = new Date()) {
+  return db.transaction('rw', db.focusSessions, async () => {
+    const running = await db.focusSessions.where('status').equals('running').toArray();
+    let n = 0;
+    for (const f of running) {
+      const end = new Date(f.startAt).getTime() + f.plannedMin * 60000;
+      if (end <= now.getTime()) {
+        await db.focusSessions.put({ ...f, status: 'done', endAt: new Date(end).toISOString(), updatedAt: nowIso() });
+        n++;
+      }
+    }
+    return n;
+  });
+}
+
+export const deleteFocus = (id: string) => db.focusSessions.delete(id);

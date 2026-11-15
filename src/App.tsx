@@ -3,7 +3,7 @@ import { HashRouter, Navigate, Route, Routes, useLocation } from 'react-router-d
 import { BottomNav } from './components/BottomNav';
 import { Logo } from './components/Logo';
 import { BRAND } from './config/brand';
-import { ensureSeeded } from './db/repo';
+import { ensureSeeded, settleFocus } from './db/repo';
 import { DataProvider, useData } from './hooks/useData';
 import { BadHabitFormScreen } from './screens/BadHabitForm';
 import { HabitDetailScreen } from './screens/HabitDetail';
@@ -12,6 +12,7 @@ import { HabitsScreen } from './screens/Habits';
 import { TodayScreen } from './screens/Today';
 import { StatsScreen } from './screens/Stats';
 import { PointsScreen } from './screens/Points';
+import { FocusScreen } from './screens/Focus';
 import { MoreScreen } from './screens/More';
 import { SettingsScreen } from './screens/Settings';
 import { WeeklyReviewScreen } from './screens/WeeklyReview';
@@ -35,12 +36,30 @@ function ScrollToTop() {
   return null;
 }
 
+/** Closes focus sessions that ended while the app was closed or in the background. */
+function FocusSettler() {
+  useEffect(() => {
+    settleFocus();
+    const onVis = () => {
+      if (document.visibilityState === 'visible') settleFocus();
+    };
+    document.addEventListener('visibilitychange', onVis);
+    const t = window.setInterval(() => settleFocus(), 15000);
+    return () => {
+      document.removeEventListener('visibilitychange', onVis);
+      window.clearInterval(t);
+    };
+  }, []);
+  return null;
+}
+
 function AppRoutes() {
   const data = useData();
   if (!data) return <Splash />;
   return (
     <div className="app-shell">
       <ScrollToTop />
+      <FocusSettler />
       <main id="scroll-root" className="app-main">
       <Routes>
         <Route path="/" element={<Navigate to="/hoy" replace />} />
@@ -56,6 +75,7 @@ function AppRoutes() {
         <Route path="/diario/:date" element={<JournalScreen />} />
         <Route path="/stats" element={<StatsScreen />} />
         <Route path="/puntos" element={<PointsScreen />} />
+        <Route path="/concentracion" element={<FocusScreen />} />
         <Route path="/mas" element={<MoreScreen />} />
         <Route path="/ajustes" element={<SettingsScreen />} />
         <Route path="/revision" element={<WeeklyReviewScreen />} />
