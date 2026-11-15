@@ -53,3 +53,19 @@ describe('Redes / scroll (limit mode)', () => {
     expect((await findOrphans()).usageLogs).toEqual([]);
   });
 });
+
+import { finishWindow, startWindow } from './repo';
+
+describe('phone-free window records', () => {
+  it('start once per kind and day; honor answer saved; not kept is just recorded', async () => {
+    const a = await startWindow('2026-11-17', 'night', new Date(2026, 10, 17, 21, 5));
+    const again = await startWindow('2026-11-17', 'night');
+    expect(again.id).toBe(a.id);
+    await finishWindow(a.id, true, new Date(2026, 10, 17, 22, 0));
+    const m = await startWindow('2026-11-18', 'morning');
+    await finishWindow(m.id, false);
+    const all = await db.windowLogs.orderBy('date').toArray();
+    expect(all.map((w) => [w.id, w.kept])).toEqual([['2026-11-17:night', true], ['2026-11-18:morning', false]]);
+    expect(all[0].endedAt).toBeDefined();
+  });
+});

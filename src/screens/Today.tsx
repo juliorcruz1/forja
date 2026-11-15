@@ -5,6 +5,7 @@ import { useLongPress } from '../hooks/useLongPress';
 import type { BadHabit } from '../db/types';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { OneOffSheet } from '../components/OneOffSheet';
+import { WindowCard } from '../components/WindowCard';
 import { UsageEntry } from '../components/LimitHabitCard';
 import { isLimitHabit, limitOf, usageOn } from '../domain/social';
 import { DayPointsChip, JokerRow, LevelChip } from '../components/PointsBits';
@@ -134,6 +135,8 @@ export function TodayScreen() {
           </div>
         </div>
       )}
+
+      {isToday && <WindowCard />}
 
       {comeback && (
         <div className="card p-4 flex gap-3 border-violet/40">

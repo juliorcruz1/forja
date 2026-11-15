@@ -1,7 +1,7 @@
 /** All writes go through here. UI never touches Dexie tables directly. */
 import { db } from './db';
 import type {
-  BadHabit, Habit, HabitLog, JournalEntry, LogStatus, Relapse, Settings, Weekday,
+  BadHabit, Habit, HabitLog, JournalEntry, LogStatus, Relapse, Settings, Weekday, WindowKind, WindowLog,
 } from './types';
 import { defaultHabits, defaultSettings, defaultSocialHabit, normalizeSettings } from '../config/defaults';
 import { counterStatus } from '../domain/habits';
@@ -345,3 +345,25 @@ export async function setUsage(badHabitId: string, date: DateKey, minutes: numbe
   const m = Math.max(0, Math.min(24 * 60, Math.round(minutes)));
   await db.usageLogs.put({ id, badHabitId, date, minutes: m, createdAt: existing?.createdAt ?? t, updatedAt: t });
 }
+
+// ---------------- Stage 2: phone-free windows ----------------
+
+/** Starts today's window (one per kind per day). */
+export async function startWindow(date: DateKey, kind: WindowKind, now: Date = new Date()) {
+  const id = `${date}:${kind}`;
+  const existing = await db.windowLogs.get(id);
+  if (existing) return existing;
+  const t = nowIso();
+  const w: WindowLog = { id, date, kind, startedAt: now.toISOString(), createdAt: t, updatedAt: t };
+  await db.windowLogs.put(w);
+  return w;
+}
+
+/** Honor system: "¿La cumpliste?". Not keeping it never subtracts points. */
+export async function finishWindow(id: string, kept: boolean, now: Date = new Date()) {
+  const w = await db.windowLogs.get(id);
+  if (!w) return;
+  await db.windowLogs.put({ ...w, kept, endedAt: now.toISOString(), updatedAt: nowIso() });
+}
+
+export const deleteWindowLog = (id: string) => db.windowLogs.delete(id);

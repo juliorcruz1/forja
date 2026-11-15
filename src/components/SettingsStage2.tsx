@@ -1,12 +1,12 @@
 /** Ajustes sections added in Stage 2. */
-import { RotateCcw } from 'lucide-react';
+import { Plus, RotateCcw, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { DEFAULT_LEVELS, DEFAULT_POINTS } from '../config/defaults';
-import { updateSettings } from '../db/repo';
+import { saveBadHabit, updateSettings } from '../db/repo';
 import type { PointValues } from '../db/types';
 import { useData } from '../hooks/useData';
-import { formatLong, isValidKey } from '../lib/dates';
-import { Card } from './ui';
+import { formatLong, isValidKey, WEEKDAY_NAMES } from '../lib/dates';
+import { Card, Toggle } from './ui';
 
 /** Integer input that saves on blur (or Enter). */
 export function NumberField({
@@ -132,6 +132,115 @@ export function PointsSettings() {
       >
         <RotateCcw size={15} /> Restaurar valores sugeridos
       </button>
+    </Card>
+  );
+}
+
+/** Phone & social: social limit, phone-free windows, wake-up times, urge replacements. */
+export function PhoneSettings() {
+  const { settings, badHabits } = useData()!;
+  const np = settings.noPhone;
+  const limits = badHabits.filter((b) => b.mode === 'limit' && b.lifecycle !== 'archived');
+  const [newRep, setNewRep] = useState('');
+  const reps = settings.replacements;
+
+  return (
+    <Card>
+      <div id="celular" className="scroll-mt-4" />
+      <p className="font-semibold mb-1">Celular y redes</p>
+      <p className="text-[12px] text-muted mb-3">
+        FORJA no puede bloquear apps ni leer el Tiempo en pantalla. Registra, te recuerda y te da un momento de pausa;
+        el bloqueo real lo configuras en el iPhone (Tiempo en pantalla y Modos de concentración).
+      </p>
+
+      {limits.map((b) => (
+        <NumberField
+          key={b.id}
+          label={`Límite diario de ${b.name}`}
+          value={b.limitMinutes ?? 60}
+          min={1}
+          max={1440}
+          suffix="min"
+          onSave={(n) => saveBadHabit({ ...b, limitMinutes: n })}
+        />
+      ))}
+
+      <p className="text-[12px] font-semibold text-muted mt-4">Ventanas sin celular</p>
+      <div className="flex items-center justify-between py-1.5">
+        <span className="text-[14px] text-muted">Al despertar</span>
+        <Toggle checked={np.morningEnabled} onChange={(v) => updateSettings({ noPhone: { ...np, morningEnabled: v } })} label="Ventana al despertar" />
+      </div>
+      {np.morningEnabled && (
+        <NumberField label="Duración al despertar" value={np.morningMinutes} min={5} max={240} suffix="min"
+          onSave={(n) => updateSettings({ noPhone: { ...np, morningMinutes: n } })} />
+      )}
+      <div className="flex items-center justify-between py-1.5">
+        <span className="text-[14px] text-muted">Antes de dormir</span>
+        <Toggle checked={np.nightEnabled} onChange={(v) => updateSettings({ noPhone: { ...np, nightEnabled: v } })} label="Ventana antes de dormir" />
+      </div>
+      {np.nightEnabled && (
+        <NumberField label="Duración antes de dormir" value={np.nightMinutes} min={5} max={240} suffix="min"
+          onSave={(n) => updateSettings({ noPhone: { ...np, nightMinutes: n } })} />
+      )}
+      <p className="text-[12px] text-dim mt-1">
+        La ventana de la noche termina a tu hora de acostarte de ese día (más temprano en noches críticas).
+      </p>
+
+      <p className="text-[12px] font-semibold text-muted mt-4 mb-1">Hora de despertar</p>
+      <div className="divide-y divide-line">
+        {settings.wakeTime.map((w, i) => (
+          <label key={i} className="flex items-center justify-between py-1.5 gap-3">
+            <span className="text-[14px] text-muted capitalize">{WEEKDAY_NAMES[i]}</span>
+            <input
+              type="time"
+              className="field w-[150px] py-2 text-center"
+              value={w}
+              onChange={(e) => e.target.value && updateSettings({ wakeTime: settings.wakeTime.map((x, j) => (j === i ? e.target.value : x)) })}
+            />
+          </label>
+        ))}
+      </div>
+
+      <div id="reemplazos" className="scroll-mt-4" />
+      <p className="text-[12px] font-semibold text-muted mt-4 mb-1">Reemplazos rápidos (Momento de ganas)</p>
+      <ul className="space-y-1.5">
+        {reps.map((r, i) => (
+          <li key={`${r}-${i}`} className="flex items-center gap-2">
+            <span className="flex-1 text-[14px]">{r}</span>
+            <button
+              className="icon-btn"
+              aria-label={`Quitar ${r}`}
+              onClick={() => updateSettings({ replacements: reps.filter((_, j) => j !== i) })}
+            >
+              <X size={16} />
+            </button>
+          </li>
+        ))}
+      </ul>
+      <div className="flex gap-2 mt-2">
+        <input
+          className="field"
+          placeholder="Ej. Estirarme 2 minutos"
+          value={newRep}
+          onChange={(e) => setNewRep(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && newRep.trim()) {
+              updateSettings({ replacements: [...reps, newRep.trim()] });
+              setNewRep('');
+            }
+          }}
+        />
+        <button
+          className="pill-ghost shrink-0"
+          disabled={!newRep.trim()}
+          onClick={() => {
+            updateSettings({ replacements: [...reps, newRep.trim()] });
+            setNewRep('');
+          }}
+        >
+          <Plus size={16} /> Agregar
+        </button>
+      </div>
     </Card>
   );
 }
