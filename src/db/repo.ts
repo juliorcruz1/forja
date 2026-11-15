@@ -38,7 +38,11 @@ export function setStatus(habitId: string, date: DateKey, status: LogStatus) {
 }
 
 /** Tap on the status circle: pending -> done, done/min -> pending. */
-export async function toggleDone(habit: Habit, date: DateKey, asMin = false) {
+export function toggleDone(habit: Habit, date: DateKey, asMin = false) {
+  return db.transaction('rw', db.habitLogs, () => toggleDoneTx(habit, date, asMin));
+}
+
+async function toggleDoneTx(habit: Habit, date: DateKey, asMin: boolean) {
   const log = await getLog(habit.id, date);
   const cur = log?.status ?? 'pending';
   const next: LogStatus = cur === 'done' || cur === 'min' ? 'pending' : asMin ? 'min' : 'done';
@@ -52,20 +56,32 @@ export async function toggleDone(habit: Habit, date: DateKey, asMin = false) {
 }
 
 export async function setCount(habit: Habit, date: DateKey, count: number) {
-  const c = Math.max(0, Math.min(99, Math.round(count)));
-  const log = await getLog(habit.id, date);
-  let status = counterStatus(c, habit.counterTarget ?? 1);
-  if (status === 'pending' && log?.status === 'min' && c > 0) status = 'min';
-  return upsertLog(habit.id, date, { count: c, status });
+  return db.transaction('rw', db.habitLogs, async () => {
+    const c = Math.max(0, Math.min(99, Math.round(count)));
+    const log = await getLog(habit.id, date);
+    let status = counterStatus(c, habit.counterTarget ?? 1);
+    if (status === 'pending' && log?.status === 'min' && c > 0) status = 'min';
+    return upsertLog(habit.id, date, { count: c, status });
+  });
+}
+
+/** Atomic +n (safe with fast repeated taps). */
+export async function incrementCount(habit: Habit, date: DateKey, n = 1) {
+  return db.transaction('rw', db.habitLogs, async () => {
+    const log = await getLog(habit.id, date);
+    return setCount(habit, date, (log?.count ?? 0) + n);
+  });
 }
 
 export async function toggleChecklistItem(habit: Habit, date: DateKey, itemId: string) {
-  const log = await getLog(habit.id, date);
-  const set = new Set(log?.checked ?? []);
-  if (set.has(itemId)) set.delete(itemId);
-  else set.add(itemId);
-  const checked = [...set];
-  return upsertLog(habit.id, date, { checked, status: checklistStatus(habit.checklist ?? [], checked) });
+  return db.transaction('rw', db.habitLogs, async () => {
+    const log = await getLog(habit.id, date);
+    const set = new Set(log?.checked ?? []);
+    if (set.has(itemId)) set.delete(itemId);
+    else set.add(itemId);
+    const checked = [...set];
+    return upsertLog(habit.id, date, { checked, status: checklistStatus(habit.checklist ?? [], checked) });
+  });
 }
 
 export async function setChecklistAll(habit: Habit, date: DateKey, all: boolean) {

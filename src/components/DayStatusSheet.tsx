@@ -1,7 +1,7 @@
 import { Minus, Plus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { Habit, LogStatus } from '../db/types';
-import { setChecklistAll, setCount, setLogNote, setStatus, toggleChecklistItem } from '../db/repo';
+import { incrementCount, setChecklistAll, setLogNote, setStatus, toggleChecklistItem } from '../db/repo';
 import type { HabitIndex } from '../domain/habits';
 import { type DateKey, formatLong } from '../lib/dates';
 import { Sheet } from './ui';
@@ -42,10 +42,10 @@ export function DayStatusSheet({
             {count} de {habit.counterTarget ?? 1} {habit.counterUnit ?? ''}
           </span>
           <div className="flex gap-2">
-            <button className="icon-btn bg-card border border-line2" aria-label="Quitar uno" onClick={() => setCount(habit, date, count - 1)}>
+            <button className="icon-btn bg-card border border-line2" aria-label="Quitar uno" onClick={() => incrementCount(habit, date, -1)}>
               <Minus size={18} />
             </button>
-            <button className="icon-btn bg-violet text-white" aria-label="Sumar uno" onClick={() => setCount(habit, date, count + 1)}>
+            <button className="icon-btn bg-violet text-white" aria-label="Sumar uno" onClick={() => incrementCount(habit, date, 1)}>
               <Plus size={18} />
             </button>
           </div>

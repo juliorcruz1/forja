@@ -10,6 +10,7 @@ import { BadHabitFormScreen } from './screens/BadHabitForm';
 import { HabitDetailScreen } from './screens/HabitDetail';
 import { HabitFormScreen } from './screens/HabitForm';
 import { HabitsScreen } from './screens/Habits';
+import { TodayScreen } from './screens/Today';
 
 function Placeholder({ title }: { title: string }) {
   return (
@@ -45,7 +46,7 @@ function AppRoutes() {
       <ScrollToTop />
       <Routes>
         <Route path="/" element={<Navigate to="/hoy" replace />} />
-        <Route path="/hoy" element={<Placeholder title="Hoy" />} />
+        <Route path="/hoy" element={<TodayScreen />} />
         <Route path="/habitos" element={<HabitsScreen />} />
         <Route path="/habitos/nuevo" element={<HabitFormScreen />} />
         <Route path="/habitos/:id" element={<HabitDetailScreen />} />
