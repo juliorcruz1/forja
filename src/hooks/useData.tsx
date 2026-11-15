@@ -1,5 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useEffect, useMemo, useState } from 'react';
+import { createContext, type ReactNode, useContext, useEffect, useMemo, useState } from 'react';
 import { db } from '../db/db';
 import type { BadHabit, DayMeta, Habit, Relapse, Settings } from '../db/types';
 import { HabitIndex } from '../domain/habits';
@@ -15,8 +15,10 @@ export interface AppData {
   today: DateKey;
 }
 
-/** Live snapshot of the core tables. Re-renders on any change. */
-export function useData(): AppData | undefined {
+const Ctx = createContext<AppData | undefined>(undefined);
+
+/** Loads a live snapshot of the core tables once and shares it with every screen. */
+export function DataProvider({ children }: { children: ReactNode }) {
   const today = useToday();
   const raw = useLiveQuery(async () => {
     const [habits, logs, plans, badHabits, relapses, settings, dayMeta] = await Promise.all([
@@ -30,7 +32,7 @@ export function useData(): AppData | undefined {
     ]);
     return { habits, logs, plans, badHabits, relapses, settings, dayMeta };
   });
-  return useMemo(() => {
+  const value = useMemo<AppData | undefined>(() => {
     if (!raw || !raw.settings) return undefined;
     return {
       habits: [...raw.habits].sort((a, b) => a.order - b.order),
@@ -42,6 +44,11 @@ export function useData(): AppData | undefined {
       today,
     };
   }, [raw, today]);
+  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
+}
+
+export function useData(): AppData | undefined {
+  return useContext(Ctx);
 }
 
 /** Local date that updates at midnight and when the app returns to foreground. */

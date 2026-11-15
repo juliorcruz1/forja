@@ -1,10 +1,15 @@
 import { useEffect, useState } from 'react';
-import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { HashRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { BottomNav } from './components/BottomNav';
 import { Logo } from './components/Logo';
 import { Screen } from './components/ui';
 import { BRAND } from './config/brand';
 import { ensureSeeded } from './db/repo';
+import { DataProvider, useData } from './hooks/useData';
+import { BadHabitFormScreen } from './screens/BadHabitForm';
+import { HabitDetailScreen } from './screens/HabitDetail';
+import { HabitFormScreen } from './screens/HabitForm';
+import { HabitsScreen } from './screens/Habits';
 
 function Placeholder({ title }: { title: string }) {
   return (
@@ -24,6 +29,39 @@ function Splash({ error }: { error?: string }) {
   );
 }
 
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+}
+
+function AppRoutes() {
+  const data = useData();
+  if (!data) return <Splash />;
+  return (
+    <>
+      <ScrollToTop />
+      <Routes>
+        <Route path="/" element={<Navigate to="/hoy" replace />} />
+        <Route path="/hoy" element={<Placeholder title="Hoy" />} />
+        <Route path="/habitos" element={<HabitsScreen />} />
+        <Route path="/habitos/nuevo" element={<HabitFormScreen />} />
+        <Route path="/habitos/:id" element={<HabitDetailScreen />} />
+        <Route path="/habitos/:id/editar" element={<HabitFormScreen />} />
+        <Route path="/malos/nuevo" element={<BadHabitFormScreen />} />
+        <Route path="/malos/:id/editar" element={<BadHabitFormScreen />} />
+        <Route path="/diario" element={<Placeholder title="Diario" />} />
+        <Route path="/stats" element={<Placeholder title="Estadísticas" />} />
+        <Route path="/mas" element={<Placeholder title="Más" />} />
+        <Route path="*" element={<Navigate to="/hoy" replace />} />
+      </Routes>
+      <BottomNav />
+    </>
+  );
+}
+
 export default function App() {
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string>();
@@ -35,16 +73,9 @@ export default function App() {
   if (!ready) return <Splash error={error} />;
   return (
     <HashRouter>
-      <Routes>
-        <Route path="/" element={<Navigate to="/hoy" replace />} />
-        <Route path="/hoy" element={<Placeholder title="Hoy" />} />
-        <Route path="/habitos" element={<Placeholder title="Hábitos" />} />
-        <Route path="/diario" element={<Placeholder title="Diario" />} />
-        <Route path="/stats" element={<Placeholder title="Estadísticas" />} />
-        <Route path="/mas" element={<Placeholder title="Más" />} />
-        <Route path="*" element={<Navigate to="/hoy" replace />} />
-      </Routes>
-      <BottomNav />
+      <DataProvider>
+        <AppRoutes />
+      </DataProvider>
     </HashRouter>
   );
 }
