@@ -1,8 +1,8 @@
 /** All writes go through here. UI never touches Dexie tables directly. */
 import { db } from './db';
 import type {
-  BadHabit, FocusSession, Habit, HabitLog, JournalEntry, LogStatus, Relapse, Settings, Urge, Weekday, WindowKind,
-  WindowLog,
+  BadHabit, DebtEvent, FocusSession, Habit, HabitLog, JournalEntry, LogStatus, Relapse, Settings, Urge, Weekday,
+  WindowKind, WindowLog,
 } from './types';
 import { defaultHabits, defaultSettings, defaultSocialHabit, normalizeSettings } from '../config/defaults';
 import { counterStatus } from '../domain/habits';
@@ -452,4 +452,39 @@ export async function resolveUrge(id: string, result: 'resisted' | 'fell', badHa
     }
     await db.urges.put({ ...u, result, badHabitId: result === 'fell' ? badHabitId : undefined, relapseId, updatedAt: nowIso() });
   });
+}
+
+// ---------------- Stage 3: debts ("castigos") and jar ----------------
+
+type DebtLike = { date: DateKey; type: DebtEvent['snapshot']['type']; label: string; detail: string };
+
+async function putDebtEvent(d: DebtLike, kind: DebtEvent['kind'], now: Date) {
+  const t = nowIso();
+  const ev: DebtEvent = {
+    id: `${kind}:${d.date}`, debtDate: d.date, kind, date: toKeyDate(now),
+    snapshot: { type: d.type, label: d.label, detail: d.detail }, createdAt: t, updatedAt: t,
+  };
+  await db.debtEvents.put(ev);
+}
+
+/** "Pagada" (honor system). */
+export const payDebt = (d: DebtLike, now: Date = new Date()) => putDebtEvent(d, 'paid', now);
+
+/** Undo a "Pagada" tapped by mistake. */
+export async function unpayDebt(debtDate: DateKey) {
+  await db.debtEvents.delete(`paid:${debtDate}`);
+}
+
+/** "Reiniciar": clears every pending debt to avoid the snowball effect. */
+export async function resetDebts(debts: DebtLike[], now: Date = new Date()) {
+  await db.transaction('rw', db.debtEvents, async () => {
+    for (const d of debts) await putDebtEvent(d, 'reset', now);
+  });
+}
+
+/** "Vaciar frasco": empties everything up to the newest jar entry. */
+export async function emptyJar(amount: number, throughDate: DateKey, now: Date = new Date()) {
+  const t = nowIso();
+  const date = toKeyDate(now);
+  await db.jarEmpties.put({ id: `${date}:${t}`, date, throughDate, amount, createdAt: t, updatedAt: t });
 }
