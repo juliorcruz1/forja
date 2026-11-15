@@ -488,3 +488,23 @@ export async function emptyJar(amount: number, throughDate: DateKey, now: Date =
   const date = toKeyDate(now);
   await db.jarEmpties.put({ id: `${date}:${t}`, date, throughDate, amount, createdAt: t, updatedAt: t });
 }
+
+// ---------------- Stage 3: medals ----------------
+
+/** Makes the stored unlocks match the derived medals (adds new ones, removes ones no longer earned). */
+export async function syncMedalUnlocks(add: { medalId: string; achievedOn: DateKey }[], remove: string[]) {
+  if (!add.length && !remove.length) return;
+  const t = nowIso();
+  await db.transaction('rw', db.medals, async () => {
+    if (remove.length) await db.medals.bulkDelete(remove);
+    for (const a of add) {
+      if (await db.medals.get(a.medalId)) continue;
+      await db.medals.put({ id: a.medalId, medalId: a.medalId, achievedOn: a.achievedOn, seen: false, createdAt: t, updatedAt: t });
+    }
+  });
+}
+
+export async function markMedalsSeen() {
+  const t = nowIso();
+  await db.medals.filter((m) => !m.seen).modify({ seen: true, updatedAt: t });
+}

@@ -7,6 +7,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { OneOffSheet } from '../components/OneOffSheet';
 import { WindowCard } from '../components/WindowCard';
 import { DebtsCard } from '../components/DebtsCard';
+import { MedalNotice } from '../components/MedalBits';
 import { GreetingCard } from '../components/GreetingCard';
 import { QuickActions } from '../components/QuickActions';
 import { UsageEntry } from '../components/LimitHabitCard';
@@ -145,6 +146,7 @@ export function TodayScreen() {
       )}
 
       {isToday && <DebtsCard />}
+      {isToday && <MedalNotice />}
 
       {isToday && <WindowCard />}
       {isToday && <QuickActions />}

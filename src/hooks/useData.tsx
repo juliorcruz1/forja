@@ -9,6 +9,7 @@ import { normalizeSettings } from '../config/defaults';
 import { HabitIndex } from '../domain/habits';
 import { computePoints, type PointsResult } from '../domain/points';
 import { computeDebts, type PunishResult } from '../domain/punish';
+import { computeMedals, type Medal } from '../domain/medals';
 import { type DateKey, todayKey } from '../lib/dates';
 
 export interface AppData {
@@ -35,6 +36,8 @@ export interface AppData {
   reviews: WeeklyReview[];
   /** Debts derived from the records + paid/reset events. */
   debts: PunishResult;
+  /** Medals derived from the records (unlock dates come from medalUnlocks). */
+  medals: Medal[];
 }
 
 const Ctx = createContext<AppData | undefined>(undefined);
@@ -81,13 +84,19 @@ export function DataProvider({ children }: { children: ReactNode }) {
       jokers: raw.jokers, dayMeta: raw.dayMeta, debtEvents: raw.debtEvents, jarEmpties: raw.jarEmpties,
       punish: settings.punish, today,
     });
+    const idx = new HabitIndex(raw.logs, raw.plans);
+    const medals = computeMedals({
+      habits: raw.habits, idx, badHabits: raw.badHabits, relapses: raw.relapses, usageLogs: raw.usageLogs,
+      focusSessions: raw.focusSessions, reviews: raw.reviews, lastBackupAt: settings.lastBackupAt, levels: settings.levels,
+      points, today,
+    });
     return {
       habits: [...raw.habits].sort((a, b) => a.order - b.order),
       badHabits: [...raw.badHabits].sort((a, b) => a.order - b.order),
       relapses: raw.relapses,
       settings,
       dayMeta: raw.dayMeta,
-      idx: new HabitIndex(raw.logs, raw.plans),
+      idx,
       today,
       logs: raw.logs,
       jokers: raw.jokers,
@@ -101,6 +110,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       medalUnlocks: raw.medalUnlocks,
       reviews: raw.reviews,
       debts,
+      medals,
     };
   }, [raw, today]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

@@ -3,7 +3,9 @@ import { HashRouter, Navigate, Route, Routes, useLocation } from 'react-router-d
 import { BottomNav } from './components/BottomNav';
 import { Logo } from './components/Logo';
 import { BRAND } from './config/brand';
-import { ensureSeeded, settleFocus } from './db/repo';
+import { ensureSeeded, settleFocus, syncMedalUnlocks } from './db/repo';
+import { medalSyncPlan } from './domain/medals';
+import { MedalsScreen } from './screens/Medals';
 import { DataProvider, useData } from './hooks/useData';
 import { BadHabitFormScreen } from './screens/BadHabitForm';
 import { HabitDetailScreen } from './screens/HabitDetail';
@@ -56,6 +58,17 @@ function FocusSettler() {
   return null;
 }
 
+/** Keeps the stored medal unlocks in step with the derived medals. */
+function MedalSync() {
+  const data = useData();
+  useEffect(() => {
+    if (!data) return;
+    const { add, remove } = medalSyncPlan(data.medals, data.medalUnlocks);
+    if (add.length || remove.length) syncMedalUnlocks(add, remove);
+  }, [data]);
+  return null;
+}
+
 function AppRoutes() {
   const data = useData();
   if (!data) return <Splash />;
@@ -63,6 +76,7 @@ function AppRoutes() {
     <div className="app-shell">
       <ScrollToTop />
       <FocusSettler />
+      <MedalSync />
       <main id="scroll-root" className="app-main">
       <Routes>
         <Route path="/" element={<Navigate to="/hoy" replace />} />
@@ -82,6 +96,7 @@ function AppRoutes() {
         <Route path="/ganas" element={<UrgeScreen />} />
         <Route path="/castigos" element={<PunishScreen />} />
         <Route path="/calendario" element={<CalendarScreen />} />
+        <Route path="/logros" element={<MedalsScreen />} />
         <Route path="/mas" element={<MoreScreen />} />
         <Route path="/ajustes" element={<SettingsScreen />} />
         <Route path="/revision" element={<WeeklyReviewScreen />} />

@@ -11,6 +11,7 @@ import { formatPts, summarize } from '../domain/points';
 import { isLimitHabit, limitOf, usageTrend } from '../domain/social';
 import { focusTotals, formatMinutes } from '../domain/focus';
 import { debtsInRange } from '../domain/punish';
+import { earnedOn } from '../domain/medals';
 import { hourLabel, urgePatterns } from '../domain/urges';
 import { WEEKDAY_NAMES } from '../lib/dates';
 import type { BadHabit } from '../db/types';
@@ -91,6 +92,7 @@ export function StatsScreen() {
       <FocusCard period={period} />
 
       <DebtsStatsCard period={period} />
+      <MedalsStatsCard period={period} />
 
       <div className="rounded-card border p-4 flex gap-3" style={{ background: '#1A1530', borderColor: '#3A2F66' }}>
         <Lightbulb size={20} className="text-night-text shrink-0 mt-0.5" />
@@ -443,6 +445,31 @@ function DebtsStatsCard({ period }: { period: Period }) {
         <MiniStat label="Reiniciados" value={s.reset} />
         <MiniStat label="Al frasco" value={`${settings.punish.currency}${s.jar}`} />
       </div>
+    </Card>
+  );
+}
+
+function MedalsStatsCard({ period }: { period: Period }) {
+  const { medals, medalUnlocks } = useData()!;
+  const earned = medals.filter((m) => m.earned);
+  const inPeriod = earned.filter((m) => {
+    const d = earnedOn(m, medalUnlocks);
+    return !!d && d >= period.from && d <= period.to;
+  });
+  return (
+    <Card>
+      <div className="flex items-baseline justify-between">
+        <p className="font-semibold">Medallas</p>
+        <Link to="/logros" className="hit text-[0.8125rem] text-violet-text min-h-[32px] inline-flex items-center">Abrir</Link>
+      </div>
+      <div className="grid gap-2 mt-2 text-center grid-cols-[repeat(auto-fit,minmax(4.5rem,1fr))]">
+        <MiniStat label="En el periodo" value={inPeriod.length} />
+        <MiniStat label="Ganadas en total" value={earned.length} />
+        <MiniStat label="Por ganar" value={medals.length - earned.length} />
+      </div>
+      {inPeriod.length > 0 && (
+        <p className="text-[0.75rem] text-muted mt-2 line-clamp-2">{inPeriod.map((m) => m.title).join(' · ')}</p>
+      )}
     </Card>
   );
 }
