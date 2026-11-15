@@ -13,7 +13,7 @@ export function Screen({
         <div className="flex items-end gap-1 min-w-0">
           {back && (
             <button
-              className="icon-btn -ml-3 mb-0.5"
+              className="icon-btn shrink-0 -ml-3 mb-0.5"
               aria-label="Volver"
               onClick={() => (typeof back === 'string' ? nav(back) : nav(-1))}
             >

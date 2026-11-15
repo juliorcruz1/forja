@@ -159,7 +159,7 @@ export function PunishScreen() {
 
       <p className="text-[0.75rem] text-dim px-1">
         FORJA no bloquea apps ni dispositivos y no mueve dinero: todo funciona con tu palabra. Cambia tipos y montos en{' '}
-        <Link to="/ajustes#castigos" className="text-violet-text">Ajustes</Link>.
+        <Link to="/ajustes#castigos" className="hit text-violet-text">Ajustes</Link>.
       </p>
 
       <ResetSheet open={resetOpen} onClose={() => setResetOpen(false)} pending={debts.pending} />

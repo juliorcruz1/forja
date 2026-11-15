@@ -101,7 +101,7 @@ function MonthView({ month, input, onDay }: { month: DateKey; input: CalendarInp
               key={d.date}
               type="button"
               onClick={() => onDay(d.date)}
-              className="flex flex-col items-center gap-1 py-1 min-h-[44px] rounded-xl active:bg-card2"
+              className="hit flex flex-col items-center gap-1 py-1 min-h-[44px] rounded-xl active:bg-card2"
               aria-label={`${formatLong(d.date)}: ${KIND_LABEL[d.kind]}${d.weekly.length ? `, ${d.weekly.map((w) => `${w.name} ${w.done ? 'hecho' : 'planeado'}`).join(', ')}` : ''}`}
             >
               <DayShape kind={d.kind} today={d.isToday} className="w-8 h-8 text-[0.8125rem]">

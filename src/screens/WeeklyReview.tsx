@@ -74,13 +74,13 @@ export function WeeklyReviewScreen() {
           <Card>
             <p className="text-[0.75rem] text-muted mb-2">Mejores</p>
             {best.map((h) => (
-              <p key={h.habit.id} className="text-[0.875rem] truncate">{h.habit.name} <span className="text-violet-text">{h.tally.pct}%</span></p>
+              <p key={h.habit.id} className="text-[0.875rem] flex gap-1 min-w-0"><span className="truncate">{h.habit.name}</span> <span className="text-violet-text shrink-0">{h.tally.pct}%</span></p>
             ))}
           </Card>
           <Card>
             <p className="text-[0.75rem] text-muted mb-2">A mejorar</p>
             {worst.length ? worst.map((h) => (
-              <p key={h.habit.id} className="text-[0.875rem] truncate">{h.habit.name} <span className="text-blue-text">{h.tally.pct}%</span></p>
+              <p key={h.habit.id} className="text-[0.875rem] flex gap-1 min-w-0"><span className="truncate">{h.habit.name}</span> <span className="text-blue-text shrink-0">{h.tally.pct}%</span></p>
             )) : <p className="text-[0.8125rem] text-dim">—</p>}
           </Card>
         </div>

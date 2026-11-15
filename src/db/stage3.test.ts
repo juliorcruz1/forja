@@ -90,3 +90,31 @@ describe('editing past days recalculates everything derived', () => {
     expect(after.history[0]).toMatchObject({ date: '2026-11-09', status: 'paid', orphan: true });
   });
 });
+
+describe('stage 3 backup (v4)', () => {
+  it('export → import keeps paid/reset debts, jar emptying, medals and settings', async () => {
+    const { createBackup, parseBackup, restoreBackup } = await import('./backup');
+    const { syncMedalUnlocks } = await import('./repo');
+    await setup();
+    await emptyJar(4, '2026-11-10', new Date(2026, 10, 11, 9));
+    const before = await debtsAt('2026-11-12');
+    await payDebt(before.pending[0], new Date(2026, 10, 12, 8));
+    await syncMedalUnlocks([{ medalId: 'backup:1', achievedOn: '2026-11-12' }], []);
+    const snapshot = await debtsAt('2026-11-12');
+
+    const text = JSON.stringify(await createBackup());
+    expect(JSON.parse(text).schemaVersion).toBe(4);
+    await db.delete();
+    await db.open();
+    await restoreBackup(parseBackup(text));
+
+    const after = await debtsAt('2026-11-12');
+    expect(after.pending).toEqual(snapshot.pending);
+    expect(after.history.map((d) => [d.date, d.status])).toEqual(snapshot.history.map((d) => [d.date, d.status]));
+    expect(after.jar.empties).toHaveLength(1);
+    expect(after.jar.empties[0]).toMatchObject({ amount: 4, throughDate: '2026-11-10' });
+    expect(await db.medals.get('backup:1')).toMatchObject({ achievedOn: '2026-11-12' });
+    const s = normalizeSettings((await db.settings.get('settings'))!);
+    expect(s.punish).toMatchObject({ startDate: '2026-11-09', jarAmount: 2 });
+  });
+});
