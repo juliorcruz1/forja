@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { HABIT_ICONS, HabitIcon } from '../components/icons';
 import { Card, Screen, Sheet, Toggle } from '../components/ui';
-import type { ChecklistItem, Frequency, Habit, HabitKind, Weekday } from '../db/types';
+import type { ChecklistItem, Frequency, Habit, HabitKind, PunishChoice, Weekday } from '../db/types';
+import { PunishPicker } from '../components/PunishSettings';
 import {
   archiveHabit, deleteHabit, moveHabit, pauseHabit, restoreHabit, resumeHabit, saveHabit,
 } from '../db/repo';
@@ -31,11 +32,13 @@ interface FormState {
   counterUnit: string;
   checklist: ChecklistItem[];
   sleepLinked: boolean;
+  punishType: PunishChoice | undefined;
 }
 
 const EMPTY: FormState = {
   name: '', icon: 'target', kind: 'check', freqType: 'daily', days: [0, 1, 2, 3, 4], target: 3, plannedDays: [],
   minVersion: '', identity: '', stackAfter: '', required: true, counterTarget: 1, counterUnit: '', checklist: [], sleepLinked: false,
+  punishType: undefined,
 };
 
 function fromHabit(h: Habit): FormState {
@@ -56,6 +59,7 @@ function fromHabit(h: Habit): FormState {
     counterUnit: h.counterUnit ?? '',
     checklist: h.checklist ?? [],
     sleepLinked: !!h.sleepLinked,
+    punishType: h.punishType,
   };
 }
 
@@ -109,6 +113,7 @@ export function HabitFormScreen() {
       counterUnit: f.kind === 'counter' ? f.counterUnit.trim() || undefined : undefined,
       checklist: f.kind === 'checklist' ? cleanItems(f.checklist) : undefined,
       sleepLinked: f.sleepLinked || undefined,
+      punishType: f.punishType,
     });
     nav(existing ? `/habitos/${h.id}` : '/habitos', { replace: true });
   };
@@ -203,6 +208,11 @@ export function HabitFormScreen() {
           </div>
           <Toggle checked={f.sleepLinked} onChange={(v) => set('sleepLinked', v)} label="Ligado a dormir" />
         </div>
+        {f.required && (
+          <div className="mt-4">
+            <PunishPicker value={f.punishType} onChange={(v) => set('punishType', v)} />
+          </div>
+        )}
       </Card>
 
       <button className="pill-primary w-full disabled:opacity-40" disabled={!valid} onClick={save}>

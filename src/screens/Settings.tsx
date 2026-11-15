@@ -13,6 +13,7 @@ import { useData } from '../hooks/useData';
 import { PhoneSettings, PointsSettings } from '../components/SettingsStage2';
 import { NameSetting, RemindersSection } from '../components/Reminders';
 import { DeviceInfo } from '../components/DeviceInfo';
+import { PunishSettings } from '../components/PunishSettings';
 import { addDays, formatTime, WEEKDAY_NAMES, weekStart } from '../lib/dates';
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -124,6 +125,8 @@ export function SettingsScreen() {
       <PhoneSettings />
 
       <RemindersSection />
+
+      <PunishSettings />
 
       <div ref={backupRef} className="scroll-mt-4">
         <BackupCard lastBackupAt={settings.lastBackupAt} />

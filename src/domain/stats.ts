@@ -219,8 +219,9 @@ export function observation(s: PeriodStats): string | null {
     parts.push(`${worst.habit.name} es el que más cuesta (${worst.tally.pct}%)${worst.habit.minVersion ? `: prueba su versión mínima, "${worst.habit.minVersion}".` : '.'}`);
   }
   const maxMiss = Math.max(...s.missesByWeekday);
-  if (maxMiss >= 2) {
-    const days = s.missesByWeekday.map((n, i) => (n === maxMiss ? WEEKDAY_NAMES[i] : null)).filter(Boolean);
+  const days = s.missesByWeekday.map((n, i) => (n === maxMiss ? WEEKDAY_NAMES[i] : null)).filter(Boolean);
+  // Three or more tied days say nothing useful ("los martes y miércoles y jueves y…").
+  if (maxMiss >= 2 && days.length <= 2) {
     parts.push(`Los ${days.join(' y ')} es cuando más fallas (${maxMiss} pendientes sin cumplir).`);
   }
   if (s.overall.pct !== null && s.previous.pct !== null) {

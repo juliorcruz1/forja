@@ -10,6 +10,7 @@ import { useData } from '../hooks/useData';
 import { formatPts, summarize } from '../domain/points';
 import { isLimitHabit, limitOf, usageTrend } from '../domain/social';
 import { focusTotals, formatMinutes } from '../domain/focus';
+import { debtsInRange } from '../domain/punish';
 import { hourLabel, urgePatterns } from '../domain/urges';
 import { WEEKDAY_NAMES } from '../lib/dates';
 import type { BadHabit } from '../db/types';
@@ -88,6 +89,8 @@ export function StatsScreen() {
       <PointsCard period={period} />
 
       <FocusCard period={period} />
+
+      <DebtsStatsCard period={period} />
 
       <div className="rounded-card border p-4 flex gap-3" style={{ background: '#1A1530', borderColor: '#3A2F66' }}>
         <Lightbulb size={20} className="text-night-text shrink-0 mt-0.5" />
@@ -419,6 +422,27 @@ function UrgesCard({ period }: { period: Period }) {
           </div>
         </>
       )}
+    </Card>
+  );
+}
+
+/** Debts in the period: created, paid, pending and jar. Neutral wording. */
+function DebtsStatsCard({ period }: { period: Period }) {
+  const { debts, settings } = useData()!;
+  if (!settings.punish.enabled && debts.history.length === 0) return null;
+  const s = debtsInRange(debts, period.from, period.to);
+  return (
+    <Card>
+      <div className="flex items-baseline justify-between">
+        <p className="font-semibold">Castigos</p>
+        <Link to="/castigos" className="hit text-[0.8125rem] text-violet-text min-h-[32px] inline-flex items-center">Abrir</Link>
+      </div>
+      <div className="grid gap-2 mt-2 text-center grid-cols-[repeat(auto-fit,minmax(4.5rem,1fr))]">
+        <MiniStat label="Pagados" value={s.paid} />
+        <MiniStat label="Pendientes" value={s.pending} />
+        <MiniStat label="Reiniciados" value={s.reset} />
+        <MiniStat label="Al frasco" value={`${settings.punish.currency}${s.jar}`} />
+      </div>
     </Card>
   );
 }

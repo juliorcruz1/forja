@@ -8,6 +8,7 @@ import type {
 import { normalizeSettings } from '../config/defaults';
 import { HabitIndex } from '../domain/habits';
 import { computePoints, type PointsResult } from '../domain/points';
+import { computeDebts, type PunishResult } from '../domain/punish';
 import { type DateKey, todayKey } from '../lib/dates';
 
 export interface AppData {
@@ -32,6 +33,8 @@ export interface AppData {
   jarEmpties: JarEmpty[];
   medalUnlocks: MedalUnlock[];
   reviews: WeeklyReview[];
+  /** Debts derived from the records + paid/reset events. */
+  debts: PunishResult;
 }
 
 const Ctx = createContext<AppData | undefined>(undefined);
@@ -73,6 +76,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
       usageLogs: raw.usageLogs, windowLogs: raw.windowLogs, focusSessions: raw.focusSessions, urges: raw.urges,
       jokers: raw.jokers, dayMeta: raw.dayMeta, settings, today,
     });
+    const debts = computeDebts({
+      habits: raw.habits, logs: raw.logs, plans: raw.plans, badHabits: raw.badHabits, relapses: raw.relapses,
+      jokers: raw.jokers, dayMeta: raw.dayMeta, debtEvents: raw.debtEvents, jarEmpties: raw.jarEmpties,
+      punish: settings.punish, today,
+    });
     return {
       habits: [...raw.habits].sort((a, b) => a.order - b.order),
       badHabits: [...raw.badHabits].sort((a, b) => a.order - b.order),
@@ -92,6 +100,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       jarEmpties: raw.jarEmpties,
       medalUnlocks: raw.medalUnlocks,
       reviews: raw.reviews,
+      debts,
     };
   }, [raw, today]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

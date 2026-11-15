@@ -6,6 +6,8 @@ import { Card, Screen, Sheet } from '../components/ui';
 import { BAD_HABIT_SUGGESTIONS } from '../config/defaults';
 import { deleteBadHabit, saveBadHabit, setBadHabitLifecycle } from '../db/repo';
 import { useData } from '../hooks/useData';
+import { PunishPicker } from '../components/PunishSettings';
+import type { PunishChoice } from '../db/types';
 
 export function BadHabitFormScreen() {
   const { id } = useParams();
@@ -19,6 +21,7 @@ export function BadHabitFormScreen() {
   const [startDate, setStartDate] = useState(data?.today ?? '');
   const [mode, setMode] = useState<'days' | 'limit'>('days');
   const [limit, setLimit] = useState('60');
+  const [punishType, setPunishType] = useState<PunishChoice | undefined>(undefined);
   const [loaded, setLoaded] = useState(!id);
   const [confirm, setConfirm] = useState(false);
 
@@ -31,6 +34,7 @@ export function BadHabitFormScreen() {
       setStartDate(existing.startDate);
       setMode(existing.mode ?? 'days');
       setLimit(String(existing.limitMinutes ?? 60));
+      setPunishType(existing.punishType);
       setLoaded(true);
     }
   }, [existing, loaded]);
@@ -50,6 +54,7 @@ export function BadHabitFormScreen() {
       startDate: startDate || data.today,
       mode,
       limitMinutes: mode === 'limit' ? Math.max(1, Math.round(Number(limit) || 60)) : undefined,
+      punishType,
     });
     nav('/habitos?tab=malos', { replace: true });
   };
@@ -105,6 +110,11 @@ export function BadHabitFormScreen() {
         <textarea id="repl" className="field min-h-[70px]" value={replacement} onChange={(e) => setReplacement(e.target.value)} placeholder="Ej. Leo 2 páginas o salgo a caminar" />
         <label className="label mt-4" htmlFor="start">Contar desde</label>
         <input id="start" type="date" className="field" value={startDate} max={data.today} onChange={(e) => setStartDate(e.target.value)} />
+        {mode === 'days' && (
+          <div className="mt-4">
+            <PunishPicker value={punishType} onChange={setPunishType} />
+          </div>
+        )}
       </Card>
       <button className="pill-primary w-full disabled:opacity-40" disabled={!name.trim()} onClick={save}>
         {existing ? 'Guardar cambios' : 'Empezar a contar'}

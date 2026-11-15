@@ -242,7 +242,7 @@ export const updateOneOff = (id: string, name: string, icon: string) =>
 // ---------------- Bad habits ----------------
 
 export type BadHabitDraft = Pick<BadHabit, 'name' | 'icon' | 'trigger' | 'replacement'> &
-  Partial<Pick<BadHabit, 'id' | 'startDate' | 'mode' | 'limitMinutes'>>;
+  Partial<Pick<BadHabit, 'id' | 'startDate' | 'mode' | 'limitMinutes' | 'punishType'>>;
 
 export async function saveBadHabit(draft: BadHabitDraft): Promise<BadHabit> {
   const t = nowIso();
