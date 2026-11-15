@@ -1,7 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Check, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight, Printer } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { HabitIcon } from '../components/icons';
 import { Card, Screen } from '../components/ui';
 import { WEEKLY_REVIEW_QUESTIONS } from '../config/defaults';
@@ -87,6 +87,13 @@ export function WeeklyReviewScreen() {
       )}
 
       <Answers key={ws} ws={ws} initial={review.r?.answers ?? []} />
+
+      <Link to={`/imprimir/${ws}?modo=archivo`} className="pill-ghost w-full">
+        <Printer size={17} /> Imprimir / Guardar PDF
+      </Link>
+      <p className="text-[0.75rem] text-dim text-center -mt-1">
+        Hoja para la pared, registro de la semana u hoja de planeación.
+      </p>
     </Screen>
   );
 }

@@ -6,6 +6,7 @@ import { BRAND } from './config/brand';
 import { ensureSeeded, settleFocus, syncMedalUnlocks } from './db/repo';
 import { medalSyncPlan } from './domain/medals';
 import { MedalsScreen } from './screens/Medals';
+import { PrintScreen } from './screens/Print';
 import { DataProvider, useData } from './hooks/useData';
 import { BadHabitFormScreen } from './screens/BadHabitForm';
 import { HabitDetailScreen } from './screens/HabitDetail';
@@ -97,6 +98,8 @@ function AppRoutes() {
         <Route path="/castigos" element={<PunishScreen />} />
         <Route path="/calendario" element={<CalendarScreen />} />
         <Route path="/logros" element={<MedalsScreen />} />
+        <Route path="/imprimir" element={<PrintScreen />} />
+        <Route path="/imprimir/:week" element={<PrintScreen />} />
         <Route path="/mas" element={<MoreScreen />} />
         <Route path="/ajustes" element={<SettingsScreen />} />
         <Route path="/revision" element={<WeeklyReviewScreen />} />
