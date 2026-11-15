@@ -1,9 +1,9 @@
 import Dexie, { type Table } from 'dexie';
 import type {
-  BadHabit, DayMeta, FocusSession, Habit, HabitLog, Joker, JournalEntry, Relapse, Settings, Urge, UsageLog,
-  WeekPlan, WeeklyReview, WindowLog,
+  BadHabit, DayMeta, DebtEvent, FocusSession, Habit, HabitLog, JarEmpty, Joker, JournalEntry, MedalUnlock, Relapse,
+  Settings, Urge, UsageLog, WeekPlan, WeeklyReview, WindowLog,
 } from './types';
-import { migrateHabitV1toV2, migrateSettingsV2toV3, withSocialHabit } from './migrations';
+import { migrateHabitV1toV2, migrateSettingsV2toV3, migrateSettingsV3toV4, withSocialHabit } from './migrations';
 import { todayKey } from '../lib/dates';
 
 /**
@@ -11,7 +11,7 @@ import { todayKey } from '../lib/dates';
  * new stores and an `.upgrade()` migration; never edit an old version.
  * Keep SCHEMA_VERSION in sync — it is also written into JSON backups.
  */
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 export class ForjaDB extends Dexie {
   habits!: Table<Habit, string>;
@@ -29,6 +29,10 @@ export class ForjaDB extends Dexie {
   windowLogs!: Table<WindowLog, string>;
   focusSessions!: Table<FocusSession, string>;
   urges!: Table<Urge, string>;
+  // Stage 3 (v4)
+  debtEvents!: Table<DebtEvent, string>;
+  jarEmpties!: Table<JarEmpty, string>;
+  medals!: Table<MedalUnlock, string>;
 
   constructor(name = 'forja') {
     super(name);
@@ -72,12 +76,26 @@ export class ForjaDB extends Dexie {
           if (next.length > bad.length) await tx.table('badHabits').add(next[next.length - 1]);
         }
       });
+    // v4 (Stage 3): debts, jar and medals.
+    this.version(4)
+      .stores({
+        debtEvents: 'id, debtDate, date',
+        jarEmpties: 'id, date',
+        medals: 'id',
+      })
+      .upgrade(async (tx) => {
+        const today = todayKey();
+        await tx.table<Settings, string>('settings').toCollection().modify((s, ref) => {
+          ref.value = migrateSettingsV3toV4(s, today);
+        });
+      });
   }
 }
 
 export const TABLES = [
   'habits', 'habitLogs', 'weekPlans', 'badHabits', 'relapses', 'journal', 'reviews', 'dayMeta', 'settings',
   'jokers', 'usageLogs', 'windowLogs', 'focusSessions', 'urges',
+  'debtEvents', 'jarEmpties', 'medals',
 ] as const;
 export type TableName = (typeof TABLES)[number];
 

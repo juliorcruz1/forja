@@ -62,6 +62,8 @@ export interface Habit extends BaseRecord {
    * Stored with startDate = oneOffDate and archivedAt = next day.
    */
   oneOffDate?: DateKey;
+  /** Stage 3: consequence when this habit is missed. undefined = the default type. */
+  punishType?: PunishChoice;
 }
 
 export type LogStatus = 'pending' | 'done' | 'min' | 'skipped' | 'rest';
@@ -97,6 +99,8 @@ export interface BadHabit extends BaseRecord {
    */
   mode?: 'days' | 'limit';
   limitMinutes?: number;
+  /** Stage 3: consequence for a relapse. undefined = the default type. */
+  punishType?: PunishChoice;
 }
 
 export interface Relapse extends BaseRecord {
@@ -161,6 +165,62 @@ export interface Settings extends BaseRecord {
   noPhone: NoPhoneConfig;
   /** Quick replacements shown in "Momento de ganas". */
   replacements: string[];
+
+  // ---------- Stage 3 (schema v4) ----------
+  punish: PunishConfig;
+  /** Paper size for the weekly print. */
+  paperSize: 'letter' | 'a4';
+}
+
+/** Consequence ("castigo") types. The app never blocks devices or moves real money. */
+export type PunishType = 'habitDebt' | 'firstThings' | 'task' | 'jar';
+export type PunishChoice = PunishType | 'none';
+
+export interface PunishConfig {
+  enabled: boolean;
+  /** Only failures from this local date on create debts. */
+  startDate: DateKey;
+  /** Types the user allows. */
+  types: PunishType[];
+  /** Used when a habit has no type of its own. */
+  defaultType: PunishType;
+  /** "Deuda del hábito": the small extra added to the missed habit. */
+  habitDebtExtra: string;
+  /** "Frasco": amount added per debt (virtual, no real money). */
+  jarAmount: number;
+  currency: string;
+  /** "Tarea pendiente": ~10-minute tasks to draw from. */
+  tasks: string[];
+}
+
+/**
+ * Debts are DERIVED from the records (failures after the day closes). Only what
+ * the user does with them is stored: paid or reset, keyed by the debt's date.
+ * id = `${kind}:${debtDate}`
+ */
+export interface DebtEvent extends BaseRecord {
+  debtDate: DateKey;
+  kind: 'paid' | 'reset';
+  /** Local date the event happened. */
+  date: DateKey;
+  /** What the debt said when it was paid/reset (kept in history even if records change later). */
+  snapshot: { type: PunishType; label: string; detail: string };
+}
+
+/** "Vaciar frasco": everything up to throughDate is emptied. */
+export interface JarEmpty extends BaseRecord {
+  date: DateKey;
+  throughDate: DateKey;
+  amount: number;
+}
+
+/** First time a medal was detected (medals themselves are derived). id = medal id */
+export interface MedalUnlock extends BaseRecord {
+  medalId: string;
+  /** Date the record reached the goal ("Ganado el …"). */
+  achievedOn: DateKey;
+  /** Shown as "new" on Inicio until seen. */
+  seen: boolean;
 }
 
 export interface PointValues {

@@ -2,7 +2,8 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { createContext, type ReactNode, useContext, useEffect, useMemo, useState } from 'react';
 import { db } from '../db/db';
 import type {
-  BadHabit, DayMeta, FocusSession, Habit, HabitLog, Joker, Relapse, Settings, Urge, UsageLog, WindowLog,
+  BadHabit, DayMeta, DebtEvent, FocusSession, Habit, HabitLog, JarEmpty, Joker, MedalUnlock, Relapse, Settings, Urge,
+  UsageLog, WeeklyReview, WindowLog,
 } from '../db/types';
 import { normalizeSettings } from '../config/defaults';
 import { HabitIndex } from '../domain/habits';
@@ -26,6 +27,11 @@ export interface AppData {
   urges: Urge[];
   /** Derived from the records on every change (memoized per day). */
   points: PointsResult;
+  // Stage 3
+  debtEvents: DebtEvent[];
+  jarEmpties: JarEmpty[];
+  medalUnlocks: MedalUnlock[];
+  reviews: WeeklyReview[];
 }
 
 const Ctx = createContext<AppData | undefined>(undefined);
@@ -34,7 +40,8 @@ const Ctx = createContext<AppData | undefined>(undefined);
 export function DataProvider({ children }: { children: ReactNode }) {
   const today = useToday();
   const raw = useLiveQuery(async () => {
-    const [habits, logs, plans, badHabits, relapses, settings, dayMeta, jokers, usageLogs, windowLogs, focusSessions, urges] =
+    const [habits, logs, plans, badHabits, relapses, settings, dayMeta, jokers, usageLogs, windowLogs, focusSessions, urges,
+      debtEvents, jarEmpties, medalUnlocks, reviews] =
       await Promise.all([
         db.habits.toArray(),
         db.habitLogs.toArray(),
@@ -48,8 +55,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
         db.windowLogs.toArray(),
         db.focusSessions.toArray(),
         db.urges.toArray(),
+        db.debtEvents.toArray(),
+        db.jarEmpties.toArray(),
+        db.medals.toArray(),
+        db.reviews.toArray(),
       ]);
-    return { habits, logs, plans, badHabits, relapses, settings, dayMeta, jokers, usageLogs, windowLogs, focusSessions, urges };
+    return {
+      habits, logs, plans, badHabits, relapses, settings, dayMeta, jokers, usageLogs, windowLogs, focusSessions, urges,
+      debtEvents, jarEmpties, medalUnlocks, reviews,
+    };
   });
   const value = useMemo<AppData | undefined>(() => {
     if (!raw || !raw.settings) return undefined;
@@ -74,6 +88,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
       focusSessions: raw.focusSessions,
       urges: raw.urges,
       points,
+      debtEvents: raw.debtEvents,
+      jarEmpties: raw.jarEmpties,
+      medalUnlocks: raw.medalUnlocks,
+      reviews: raw.reviews,
     };
   }, [raw, today]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

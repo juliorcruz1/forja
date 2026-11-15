@@ -1,4 +1,4 @@
-import type { BadHabit, Habit, LevelDef, NoPhoneConfig, PointValues, Settings } from '../db/types';
+import type { BadHabit, Habit, LevelDef, NoPhoneConfig, PointValues, PunishConfig, Settings } from '../db/types';
 import { type DateKey, todayKey } from '../lib/dates';
 import { uid, nowIso } from '../lib/id';
 
@@ -53,6 +53,24 @@ export const FOCUS_DURATIONS = [25, 45, 60];
 export const DEFAULT_FOCUS_LABEL = 'Clips';
 export const URGE_WAIT_SECONDS = 120;
 
+// ---------------- Stage 3 defaults ----------------
+
+/** Debts ("castigos") start counting from the day the feature is turned on (the upgrade day). */
+export function defaultPunish(startDate: DateKey): PunishConfig {
+  return {
+    enabled: true,
+    startDate,
+    types: ['habitDebt', 'firstThings', 'task', 'jar'],
+    defaultType: 'habitDebt',
+    habitDebtExtra: '10 flexiones más',
+    jarAmount: 1,
+    currency: '$',
+    tasks: [],
+  };
+}
+export const MAX_DEBTS_PER_DAY = 1;
+export const MAX_PENDING_DEBTS = 2;
+
 /** Fills any setting missing from older data (schema v1/v2 records and backups). */
 export function normalizeSettings(s: Partial<Settings>, today: DateKey = todayKey()): Settings {
   const base = defaultSettings(today);
@@ -66,6 +84,8 @@ export function normalizeSettings(s: Partial<Settings>, today: DateKey = todayKe
     wakeTime: s.wakeTime?.length === 7 ? s.wakeTime : DEFAULT_WAKE,
     noPhone: { ...DEFAULT_NO_PHONE, ...(s.noPhone ?? {}) },
     replacements: s.replacements ?? DEFAULT_REPLACEMENTS,
+    punish: { ...defaultPunish(today), ...(s.punish ?? {}) },
+    paperSize: s.paperSize === 'a4' ? 'a4' : 'letter',
   } as Settings;
 }
 
@@ -120,6 +140,8 @@ export function defaultSettings(today: DateKey = todayKey()): Settings {
     wakeTime: DEFAULT_WAKE,
     noPhone: DEFAULT_NO_PHONE,
     replacements: DEFAULT_REPLACEMENTS,
+    punish: defaultPunish(today),
+    paperSize: 'letter',
   };
 }
 

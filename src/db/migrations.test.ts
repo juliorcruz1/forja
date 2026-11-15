@@ -69,7 +69,7 @@ describe('schema migration v2 → v3 (Stage 2)', () => {
 
     const db = new ForjaDB(name);
     await db.open();
-    expect(db.verno).toBe(3);
+    expect(db.verno).toBe(SCHEMA_VERSION); // upgraded through every version
     const s = (await db.settings.get('settings'))!;
     expect(s.points.done).toBe(10);
     expect(s.levels.map((l) => l.name)).toEqual(['Chispa', 'Brasa', 'Hierro', 'Acero']);
@@ -95,7 +95,7 @@ describe('schema migration v2 → v3 (Stage 2)', () => {
       format: 'forja-backup', schemaVersion: 2, exportedAt: T,
       data: { settings: [{ id: 'settings', createdAt: T, updatedAt: T, bedtime: Array(7).fill('22:00') }], habits: [v1Gym()], badHabits: [] },
     }));
-    expect(b.schemaVersion).toBe(3);
+    expect(b.schemaVersion).toBe(SCHEMA_VERSION);
     expect((b.data.settings[0] as Settings).points.missed).toBe(5);
     expect((b.data.badHabits[0] as { mode?: string }).mode).toBe('limit');
     expect(b.data.focusSessions).toEqual([]);
@@ -104,7 +104,55 @@ describe('schema migration v2 → v3 (Stage 2)', () => {
 
   it('imports a v1 backup through both migrations', () => {
     const b = parseBackup(JSON.stringify({ format: 'forja-backup', schemaVersion: 1, exportedAt: T, data: { habits: [v1Gym()] } }));
-    expect(b.schemaVersion).toBe(3);
+    expect(b.schemaVersion).toBe(SCHEMA_VERSION);
     expect((b.data.habits[0] as Habit).frequency).toMatchObject({ plannedDays: [] });
+  });
+});
+
+describe('schema migration v3 → v4 (Stage 3)', () => {
+  it('upgrades a Stage 2 database: debts start on the upgrade day, history untouched', async () => {
+    const name = 'forja-v3-to-v4';
+    const old = new Dexie(name);
+    old.version(3).stores({
+      habits: 'id, lifecycle, order', habitLogs: 'id, &[habitId+date], habitId, date', weekPlans: 'id, habitId, weekStart',
+      badHabits: 'id, lifecycle, order', relapses: 'id, badHabitId, date', journal: 'id, date', reviews: 'id, weekStart',
+      dayMeta: 'id, date', settings: 'id', jokers: 'id, date, weekStart', usageLogs: 'id, badHabitId, date',
+      windowLogs: 'id, date', focusSessions: 'id, date, status', urges: 'id, date',
+    });
+    await old.open();
+    await old.table('settings').put({ id: 'settings', createdAt: T, updatedAt: T, userName: 'Ana', pointsStartDate: '2026-11-01', bedtime: Array(7).fill('22:00') });
+    await old.table('habitLogs').put({ id: 'l1', habitId: 'g', date: '2026-11-10', status: 'done', createdAt: T, updatedAt: T });
+    await old.table('focusSessions').put({ id: 'f', date: '2026-11-10', label: 'Clips', plannedMin: 25, startAt: T, status: 'done', createdAt: T, updatedAt: T });
+    old.close();
+
+    const db = new ForjaDB(name);
+    await db.open();
+    expect(db.verno).toBe(4);
+    const s = (await db.settings.get('settings'))!;
+    expect(s.userName).toBe('Ana'); // Stage 2 values kept
+    expect(s.pointsStartDate).toBe('2026-11-01');
+    expect(s.punish.enabled).toBe(true);
+    expect(s.punish.startDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(s.punish.types).toEqual(['habitDebt', 'firstThings', 'task', 'jar']);
+    expect(s.paperSize).toBe('letter');
+    expect(await db.habitLogs.count()).toBe(1);
+    expect(await db.focusSessions.count()).toBe(1);
+    expect(await db.debtEvents.count()).toBe(0);
+    expect(await db.medals.count()).toBe(0);
+    db.close();
+  });
+
+  it('imports a Stage 2 (v3) backup and an old v1 backup into v4', () => {
+    const v3 = parseBackup(JSON.stringify({
+      format: 'forja-backup', schemaVersion: 3, exportedAt: T,
+      data: { settings: [{ id: 'settings', createdAt: T, updatedAt: T, userName: 'Ana' }], habits: [v1Gym()] },
+    }));
+    expect(v3.schemaVersion).toBe(4);
+    expect((v3.data.settings[0] as Settings).punish.jarAmount).toBe(1);
+    expect((v3.data.settings[0] as Settings).userName).toBe('Ana');
+    expect(v3.data.debtEvents).toEqual([]);
+    expect(v3.data.jarEmpties).toEqual([]);
+    const v1 = parseBackup(JSON.stringify({ format: 'forja-backup', schemaVersion: 1, exportedAt: T, data: { habits: [v1Gym()] } }));
+    expect(v1.schemaVersion).toBe(4);
   });
 });

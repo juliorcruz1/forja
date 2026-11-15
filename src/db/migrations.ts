@@ -34,3 +34,12 @@ export function withSocialHabit(bad: BadHabit[], today: DateKey): BadHabit[] {
   const exists = bad.some((b) => b.mode === 'limit' || /redes|scroll/i.test(b.name));
   return exists ? bad : [...bad, defaultSocialHabit(today, bad.length)];
 }
+
+/**
+ * v3 -> v4 (Stage 3): settings get debts ("castigos") and paper size. Debts only
+ * count from the upgrade day, so earlier misses never create one.
+ */
+export function migrateSettingsV3toV4(s: Partial<Settings>, today: DateKey): Settings {
+  const punish = s.punish ?? { ...normalizeSettings({}, today).punish, startDate: today };
+  return normalizeSettings({ ...s, punish }, today);
+}

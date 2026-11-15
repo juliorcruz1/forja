@@ -1,7 +1,7 @@
 /** Versioned JSON backup: export, validate, migrate and import. */
 import { db, SCHEMA_VERSION, TABLES, type TableName } from './db';
 import { nowIso } from '../lib/id';
-import { migrateHabitV1toV2, migrateSettingsV2toV3, withSocialHabit } from './migrations';
+import { migrateHabitV1toV2, migrateSettingsV2toV3, migrateSettingsV3toV4, withSocialHabit } from './migrations';
 import type { BadHabit, Habit, Settings } from './types';
 import { todayKey } from '../lib/dates';
 
@@ -49,6 +49,12 @@ const MIGRATIONS: Record<number, (b: Backup) => Backup> = {
       },
     };
   },
+  // v3 -> v4 (Stage 3): debts start on the import day; new tables start empty.
+  3: (b) => ({
+    ...b,
+    schemaVersion: 4,
+    data: { ...b.data, settings: (b.data.settings as Partial<Settings>[]).map((s) => migrateSettingsV3toV4(s, todayKey())) },
+  }),
 };
 
 export function migrateBackup(b: Backup): Backup {
