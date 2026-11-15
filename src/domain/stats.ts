@@ -103,6 +103,8 @@ export interface PeriodStats {
   previous: Tally;
   perHabit: HabitStat[];
   extras: { habit: Habit; days: number }[];
+  /** "Solo para hoy" habits completed in the period. */
+  oneOffDone: number;
   buckets: Bucket[];
   missesByWeekday: number[]; // index 0 = Monday
 }
@@ -157,13 +159,21 @@ function bucketTally(habits: Habit[], idx: HabitIndex, from: DateKey, to: DateKe
 }
 
 export function periodStats(habits: Habit[], idx: HabitIndex, p: Period, today: DateKey): PeriodStats {
-  const required = habits.filter((h) => h.required);
+  const required = habits.filter((h) => h.required && !h.oneOffDate);
   const perHabit = required
     .map((habit) => ({ habit, tally: habitTally(habit, idx, p.from, p.to, today) }))
     // archived/paused habits with nothing to measure in this period are left out
     .filter((s) => s.tally.slots > 0 || (s.habit.lifecycle === 'active' && habitHasActivity(s.habit, p, today)));
+  const isDoneIn = (h: Habit, d: DateKey) => {
+    const s = idx.status(h.id, d);
+    return s === 'done' || s === 'min';
+  };
+  // One-day habits are summed together instead of listed one by one
+  const oneOffDone = habits.filter(
+    (h) => h.oneOffDate && h.oneOffDate >= p.from && h.oneOffDate <= minKey(p.to, today) && isDoneIn(h, h.oneOffDate),
+  ).length;
   const extras = habits
-    .filter((h) => !h.required)
+    .filter((h) => !h.required && !h.oneOffDate)
     .map((habit) => ({
       habit,
       days: range(p.from, minKey(p.to, today)).filter((d) => {
@@ -185,6 +195,7 @@ export function periodStats(habits: Habit[], idx: HabitIndex, p: Period, today: 
     previous: rangeTally(habits, idx, prev.from, prev.to, today),
     perHabit,
     extras,
+    oneOffDone,
     buckets: bucketsFor(p).map((b) => ({ ...b, pct: b.from > today ? null : bucketTally(habits, idx, b.from, b.to, today).pct })),
     missesByWeekday,
   };

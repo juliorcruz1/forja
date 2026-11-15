@@ -31,6 +31,7 @@ export function HabitRow({ habit, date, today, idx, settings, heavy, onOpen }: P
   const checked = new Set(log?.checked ?? []);
 
   const sub: string[] = [];
+  if (habit.oneOffDate) sub.push(habit.oneOffDate === today ? 'Solo para hoy' : 'Solo este día');
   if (heavy && habit.minVersion && !done) sub.push(`Mínimo: ${habit.minVersion}`);
   if (habit.frequency.type === 'weekly') {
     const g = weeklyGoal(habit, idx, today);

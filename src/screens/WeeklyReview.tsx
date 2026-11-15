@@ -49,7 +49,7 @@ export function WeeklyReviewScreen() {
             <p className="text-[11px] text-muted">Cumplimiento</p>
           </div>
           <div>
-            <p className="text-3xl font-bold">{s.extras.reduce((a, e) => a + e.days, 0)}</p>
+            <p className="text-3xl font-bold">{s.extras.reduce((a, e) => a + e.days, 0) + s.oneOffDone}</p>
             <p className="text-[11px] text-muted">Extras</p>
           </div>
           <div>

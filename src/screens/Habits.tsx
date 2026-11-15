@@ -60,7 +60,8 @@ export function HabitsScreen() {
 function GoodHabits({ filter }: { filter: HabitLifecycle }) {
   const data = useData()!;
   const { habits, idx, today } = data;
-  const list = habits.filter((h) => h.lifecycle === filter);
+  // One-day ("solo para hoy") habits live only in that day's Inicio, not here
+  const list = habits.filter((h) => h.lifecycle === filter && !h.oneOffDate);
   const weekly = list.filter((h) => h.frequency.type === 'weekly');
   const others = list.filter((h) => h.frequency.type !== 'weekly');
   const [month, setMonth] = useState<DateKey>(monthStart(today));

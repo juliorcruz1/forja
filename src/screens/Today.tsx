@@ -1,10 +1,11 @@
-import { ChevronLeft, ChevronRight, CloudUpload, Flame, Moon, RotateCcw, ClipboardList, Feather } from 'lucide-react';
+import { CalendarPlus, ChevronLeft, ChevronRight, CloudUpload, Flame, Moon, Plus, Repeat, RotateCcw, ClipboardList, Feather } from 'lucide-react';
 import { useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { OneOffSheet } from '../components/OneOffSheet';
 import { DayStatusSheet } from '../components/DayStatusSheet';
 import { HabitRow } from '../components/HabitRow';
 import { HabitIcon } from '../components/icons';
-import { Card, ProgressRing, Screen, SectionHeader } from '../components/ui';
+import { Card, ProgressRing, Screen, SectionHeader, Sheet } from '../components/ui';
 import { BRAND } from '../config/brand';
 import { backupDue } from '../db/backup';
 import { setHeavyDay } from '../db/repo';
@@ -19,6 +20,9 @@ export function TodayScreen() {
   const data = useData();
   const [params, setParams] = useSearchParams();
   const [open, setOpen] = useState<Habit | null>(null);
+  const [addMenu, setAddMenu] = useState(false);
+  const [oneOff, setOneOff] = useState<{ habit: Habit | null } | null>(null);
+  const nav = useNavigate();
   if (!data) return null;
   const { habits, idx, today, settings, badHabits, relapses, dayMeta } = data;
   const qd = params.get('d');
@@ -32,12 +36,12 @@ export function TodayScreen() {
   const heavy = !!dayMeta.find((m) => m.date === date)?.heavy;
   const progress = dayProgress(habits, date, idx, today);
   const streak = overallStreak(habits, idx, today);
-  const { required, extras } = habitsForDay(habits.filter((h) => h.lifecycle !== 'archived'), date);
+  const { required, extras, oneOff: dayOnly } = habitsForDay(habits.filter((h) => h.lifecycle !== 'archived'), date);
   const list = required.filter((h) => showsOnDay(h, date));
   const night = nightInfo(settings, date);
   const comeback = isToday && missedYesterday(habits, idx, today);
   const activeBad = badHabits.filter((b) => b.lifecycle === 'active');
-  const extrasDone = extras.filter((h) => isDoneStatus(idx.status(h.id, date))).length;
+  const extrasDone = [...extras, ...dayOnly].filter((h) => isDoneStatus(idx.status(h.id, date))).length;
   const isSunday = weekday(date) === 6;
   const needBackup = isToday && backupDue(settings.lastBackupAt);
 
@@ -136,13 +140,22 @@ export function TodayScreen() {
       <SectionHeader
         title="Hábitos de hoy"
         right={
-          <button
-            onClick={() => setHeavyDay(date, !heavy)}
-            className={`${heavy ? 'chip-on' : 'chip-off'} gap-1.5`}
-            aria-pressed={heavy}
-          >
-            <Feather size={14} /> Modo día pesado
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setHeavyDay(date, !heavy)}
+              className={`${heavy ? 'chip-on' : 'chip-off'} gap-1.5`}
+              aria-pressed={heavy}
+            >
+              <Feather size={14} /> Modo día pesado
+            </button>
+            <button
+              onClick={() => setAddMenu(true)}
+              className="w-11 h-11 rounded-full bg-violet text-white flex items-center justify-center active:scale-95 transition shrink-0"
+              aria-label="Agregar hábito"
+            >
+              <Plus size={20} />
+            </button>
+          </div>
         }
       />
       {heavy && <p className="text-[13px] text-blue-text px-1 -mt-1">{BRAND.heavyDayBody}</p>}
@@ -153,12 +166,18 @@ export function TodayScreen() {
         ))}
       </div>
 
-      {extras.length > 0 && (
+      {(extras.length > 0 || dayOnly.length > 0) && (
         <>
           <SectionHeader title="Extras" right={extrasDone > 0 ? <span className="text-[13px] text-blue-text">+{extrasDone} extra</span> : undefined} />
           <div className="space-y-2.5">
             {extras.map((h) => (
               <HabitRow key={h.id} habit={h} date={date} today={today} idx={idx} settings={settings} heavy={false} onOpen={() => setOpen(h)} />
+            ))}
+            {dayOnly.map((h) => (
+              <HabitRow
+                key={h.id} habit={h} date={date} today={today} idx={idx} settings={settings} heavy={false}
+                onOpen={() => setOneOff({ habit: h })}
+              />
             ))}
           </div>
         </>
@@ -188,6 +207,35 @@ export function TodayScreen() {
       )}
 
       <DayStatusSheet habit={open} date={date} idx={idx} onClose={() => setOpen(null)} />
+
+      <Sheet open={addMenu} onClose={() => setAddMenu(false)} title="Agregar">
+        <div className="space-y-2">
+          <button
+            className="w-full card2 p-4 flex items-center gap-3 text-left active:scale-[0.99] transition"
+            onClick={() => { setAddMenu(false); nav('/habitos/nuevo'); }}
+          >
+            <span className="w-10 h-10 rounded-xl bg-violet-soft text-violet-text flex items-center justify-center shrink-0"><Repeat size={19} /></span>
+            <span>
+              <span className="block font-medium">Hábito nuevo</span>
+              <span className="block text-[12px] text-muted">Se repite según su frecuencia</span>
+            </span>
+          </button>
+          <button
+            className="w-full card2 p-4 flex items-center gap-3 text-left active:scale-[0.99] transition"
+            onClick={() => { setAddMenu(false); setOneOff({ habit: null }); }}
+          >
+            <span className="w-10 h-10 rounded-xl bg-blue-soft text-blue-text flex items-center justify-center shrink-0"><CalendarPlus size={19} /></span>
+            <span>
+              <span className="block font-medium">Solo para hoy</span>
+              <span className="block text-[12px] text-muted">
+                {isToday ? 'Solo aparece hoy' : `Solo aparece el ${formatLong(date).toLowerCase()}`} · cuenta como extra
+              </span>
+            </span>
+          </button>
+        </div>
+      </Sheet>
+
+      <OneOffSheet open={!!oneOff} date={date} habit={oneOff?.habit} onClose={() => setOneOff(null)} />
     </Screen>
   );
 }

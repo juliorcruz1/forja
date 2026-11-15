@@ -173,6 +173,24 @@ export async function moveHabit(id: string, dir: -1 | 1) {
   await db.habits.bulkPut(all.map((h, order) => ({ ...h, order, updatedAt: h.order === order ? h.updatedAt : t })));
 }
 
+// ---------------- "Solo para hoy" (one-day habits) ----------------
+
+export async function createOneOff(date: DateKey, name: string, icon: string): Promise<Habit> {
+  return saveHabit({
+    name: name.trim(),
+    icon,
+    kind: 'check',
+    frequency: { type: 'daily' },
+    required: false,
+    startDate: date,
+    archivedAt: addDaysSafe(date, 1), // exists only on `date`
+    oneOffDate: date,
+  });
+}
+
+export const updateOneOff = (id: string, name: string, icon: string) =>
+  patchHabit(id, () => ({ name: name.trim(), icon }));
+
 // ---------------- Bad habits ----------------
 
 export type BadHabitDraft = Pick<BadHabit, 'name' | 'icon' | 'trigger' | 'replacement'> & Partial<Pick<BadHabit, 'id' | 'startDate'>>;

@@ -55,6 +55,12 @@ export interface Habit extends BaseRecord {
   checklist?: ChecklistItem[];
   /** Shows the bedtime for the day (sleep habit). */
   sleepLinked?: boolean;
+  /**
+   * "Solo para hoy": a one-day habit that exists only on this date. Always
+   * optional (counts as an extra), never in the day percentage or streaks.
+   * Stored with startDate = oneOffDate and archivedAt = next day.
+   */
+  oneOffDate?: DateKey;
 }
 
 export type LogStatus = 'pending' | 'done' | 'min' | 'skipped' | 'rest';

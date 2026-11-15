@@ -77,7 +77,7 @@ export function HabitFormScreen() {
   if (!data || !loaded) return null;
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) => setF((s) => ({ ...s, [k]: v }));
   const toggleDay = (list: Weekday[], d: Weekday) => (list.includes(d) ? list.filter((x) => x !== d) : [...list, d].sort());
-  const otherNames = data.habits.filter((h) => h.id !== id && h.lifecycle !== 'archived').map((h) => h.name);
+  const otherNames = data.habits.filter((h) => h.id !== id && h.lifecycle !== 'archived' && !h.oneOffDate).map((h) => h.name);
 
   const valid =
     f.name.trim().length > 0 &&

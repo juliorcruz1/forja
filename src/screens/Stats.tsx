@@ -30,7 +30,7 @@ export function StatsScreen() {
   const cur = overallStreak(habits, idx, today);
   const best = bestOverallStreak(habits, idx, today);
   const activeBad = badHabits.filter((b) => b.lifecycle !== 'archived');
-  const extrasTotal = s.extras.reduce((a, e) => a + e.days, 0);
+  const extrasTotal = s.extras.reduce((a, e) => a + e.days, 0) + s.oneOffDone;
 
   return (
     <Screen title="Estadísticas">
@@ -109,7 +109,7 @@ export function StatsScreen() {
             ))}
           </div>
         )}
-        {s.extras.length > 0 && (
+        {(s.extras.length > 0 || s.oneOffDone > 0) && (
           <div className="mt-4 pt-3 border-t border-line space-y-1.5">
             {s.extras.map((e) => (
               <div key={e.habit.id} className="flex items-center justify-between text-[13px]">
@@ -117,6 +117,12 @@ export function StatsScreen() {
                 <span className="text-muted">{e.days} {e.days === 1 ? 'día' : 'días'}</span>
               </div>
             ))}
+            {s.oneOffDone > 0 && (
+              <div className="flex items-center justify-between text-[13px]">
+                <span className="text-blue-text">Solo para hoy (extra)</span>
+                <span className="text-muted">{s.oneOffDone} {s.oneOffDone === 1 ? 'hecho' : 'hechos'}</span>
+              </div>
+            )}
           </div>
         )}
       </Card>

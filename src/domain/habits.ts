@@ -95,6 +95,7 @@ export function evalDay(h: Habit, date: DateKey, idx: HabitIndex, today: DateKey
   const status = idx.status(h.id, date);
   const done = isDoneStatus(status);
   if (!isActiveOn(h, date) || status === 'rest' || date > today) return { counts: false, done: false, status };
+  if (h.oneOffDate) return { counts: false, done, status }; // one-day extras never count
 
   if (h.frequency.type !== 'weekly') {
     return { counts: isScheduledByFrequency(h, date), done, status };
@@ -129,7 +130,7 @@ export function dayProgress(habits: Habit[], date: DateKey, idx: HabitIndex, tod
   let extrasDone = 0;
   const missing: Habit[] = [];
   for (const h of habits) {
-    if (!h.required) {
+    if (!h.required || h.oneOffDate) {
       if (isActiveOn(h, date) && isDoneStatus(idx.status(h.id, date))) extrasDone++;
       continue;
     }
@@ -321,12 +322,19 @@ export function counterStatus(count: number, target: number): LogStatus {
   return count >= Math.max(1, target) ? 'done' : 'pending';
 }
 
+/** "Solo para hoy" one-day habit. */
+export const isOneOff = (h: Habit) => !!h.oneOffDate;
+
+/** Regular (recurring) habits: everything except one-day habits. */
+export const recurring = (habits: Habit[]) => habits.filter((h) => !h.oneOffDate);
+
 /** Habits shown on the Today list for a date (active, not archived). */
 export function habitsForDay(habits: Habit[], date: DateKey) {
   const active = habits.filter((h) => isActiveOn(h, date)).sort((a, b) => a.order - b.order);
   return {
-    required: active.filter((h) => h.required),
-    extras: active.filter((h) => !h.required),
+    required: active.filter((h) => h.required && !isOneOff(h)),
+    extras: active.filter((h) => !h.required && !isOneOff(h)),
+    oneOff: active.filter((h) => isOneOff(h) && h.oneOffDate === date),
   };
 }
 
