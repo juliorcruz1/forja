@@ -92,6 +92,22 @@ Tus datos viven **solo en ese iPhone** (no en GitHub ni en la nube).
 
 ---
 
+---
+
+## Etapa 2
+
+- **Puntos y niveles** (Chispa, Brasa, Hierro, Acero). Se calculan siempre a partir de tus registros; si editas o borras un
+  registro, los puntos se recalculan solos. Restas suaves solo al cerrar el día (tope de −20 por día), comodín semanal,
+  y el nivel nunca baja. Cuentan desde la fecha de inicio de puntos (Ajustes).
+- **Redes / scroll** en modo límite: anotas cada noche los minutos del Tiempo en pantalla del iPhone. FORJA no puede leer ni
+  bloquear apps: el bloqueo real se configura en Ajustes del iPhone → Tiempo en pantalla y Modos de concentración.
+- **Ventanas sin celular** (al despertar y antes de dormir), **sesiones de concentración** (25/45/60 min, el tiempo se
+  calcula con la hora de inicio y de fin) y **Momento de ganas** (pausa de 2 minutos con reemplazos).
+- **Saludo del día** con tu nombre (Ajustes → Tu nombre) y guía para **recordatorios con la app Atajos**
+  (Ajustes → Recordatorios del día). Una PWA no puede mandar notificaciones a hora fija sin servidor.
+
+Después de cada actualización, en el iPhone **cierra FORJA por completo y vuelve a abrirla** para cargar la versión nueva.
+
 ## Cómo funciona
 
 - **Hábitos:** frecuencia diaria, días específicos o X veces por semana (con días planeados que se pueden mover cada semana). Cada hábito tiene versión mínima, frase de identidad, hábito previo (stacking), obligatorio u opcional, pausa y archivo.
@@ -111,7 +127,8 @@ src/
   config/defaults.ts   ← horario y hábitos iniciales (editables en la app)
   brand/logoSvg.ts     ← logo SVG reutilizable (pirámide de 6 llamas)
   db/                  ← Dexie (IndexedDB) con esquema versionado, repositorio y respaldo
-  domain/              ← lógica pura: hábitos, rachas, metas, malos, sueño, estadísticas
+  domain/              ← lógica pura: hábitos, rachas, metas, malos, sueño, estadísticas,
+                         puntos, redes, ventanas, concentración, ganas, saludos
   lib/dates.ts         ← fechas locales YYYY-MM-DD, semana inicia en lunes
   screens/             ← pantallas
   components/          ← componentes de interfaz

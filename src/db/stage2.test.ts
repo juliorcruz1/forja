@@ -1,7 +1,15 @@
 import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { db } from './db';
-import { applyJoker, removeJoker } from './repo';
+import { db, SCHEMA_VERSION } from './db';
+import { applyJoker, cancelFocus, deleteBadHabit, ensureSeeded, finishWindow, removeJoker, resolveUrge, saveBadHabit, setStatus, settleFocus, setUsage, startFocus, startUrge, startWindow, updateSettings, updateUrge } from './repo';
+import { findOrphans } from './integrity';
+import { usageOn, usageTrend, withinStreak } from '../domain/social';
+import { expiredRunning, focusTotals, formatClock, remainingMs, runningSession } from '../domain/focus';
+import { urgePatterns, urgeSecondsLeft } from '../domain/urges';
+import { badHabitStats } from '../domain/bad';
+import { computePoints } from '../domain/points';
+import { DEFAULT_LEVELS, DEFAULT_POINTS } from '../config/defaults';
+import { createBackup, parseBackup, restoreBackup } from './backup';
 
 beforeEach(async () => {
   await db.delete();
@@ -21,10 +29,6 @@ describe('joker (comodín)', () => {
     expect(await applyJoker('2026-11-12')).toBe(true); // freed after removing
   });
 });
-
-import { deleteBadHabit, saveBadHabit, setUsage } from './repo';
-import { findOrphans } from './integrity';
-import { usageOn, usageTrend, withinStreak } from '../domain/social';
 
 describe('Redes / scroll (limit mode)', () => {
   it('logs minutes per day (editable), with trend and streak within the limit', async () => {
@@ -54,8 +58,6 @@ describe('Redes / scroll (limit mode)', () => {
   });
 });
 
-import { finishWindow, startWindow } from './repo';
-
 describe('phone-free window records', () => {
   it('start once per kind and day; honor answer saved; not kept is just recorded', async () => {
     const a = await startWindow('2026-11-17', 'night', new Date(2026, 10, 17, 21, 5));
@@ -69,9 +71,6 @@ describe('phone-free window records', () => {
     expect(all[0].endedAt).toBeDefined();
   });
 });
-
-import { cancelFocus, settleFocus, startFocus } from './repo';
-import { expiredRunning, focusTotals, formatClock, remainingMs, runningSession } from '../domain/focus';
 
 describe('focus sessions (time from start and end timestamps)', () => {
   const at = (h: number, m = 0) => new Date(2026, 10, 17, h, m);
@@ -114,12 +113,6 @@ describe('focus sessions (time from start and end timestamps)', () => {
     expect(c.id).not.toBe(a.id);
   });
 });
-
-import { resolveUrge, startUrge, updateUrge } from './repo';
-import { urgePatterns, urgeSecondsLeft } from '../domain/urges';
-import { badHabitStats } from '../domain/bad';
-import { computePoints } from '../domain/points';
-import { DEFAULT_LEVELS, DEFAULT_POINTS } from '../config/defaults';
 
 describe('Momento de ganas', () => {
   it('records the trigger at open; 2-minute countdown from that time', async () => {
@@ -172,5 +165,50 @@ describe('Momento de ganas', () => {
     const mk = (date: string, hour: number, result?: 'resisted' | 'fell') => ({ id: `${date}${hour}`, date, at: T, hour, result, createdAt: T, updatedAt: T });
     const p = urgePatterns([mk('2026-11-12', 22, 'resisted'), mk('2026-11-19', 22, 'fell'), mk('2026-11-17', 15)], '2026-11-09', '2026-11-22');
     expect(p).toMatchObject({ total: 3, resisted: 1, fell: 1, topWeekday: 3, topHour: 22 }); // Thursdays, 10 PM
+  });
+});
+
+describe('Stage 2 backup (v3)', () => {
+  it('round trip keeps settings and every new table; points come back identical', async () => {
+    await ensureSeeded('2026-11-09');
+    await updateSettings({ userName: 'Ana', pointsStartDate: '2026-11-09' });
+    const h = (await db.habits.toArray())[1];
+    const redes = (await db.badHabits.toArray())[0];
+    await setStatus(h.id, '2026-11-10', 'done');
+    await setUsage(redes.id, '2026-11-10', 40);
+    await applyJoker('2026-11-11');
+    const w = await startWindow('2026-11-10', 'night');
+    await finishWindow(w.id, true);
+    const f = await startFocus('Clips', 25, new Date(2026, 10, 10, 9));
+    await settleFocus(new Date(2026, 10, 10, 10));
+    const u = await startUrge(new Date(2026, 10, 10, 22));
+    await resolveUrge(u.id, 'resisted');
+
+    const snapshot = async () => {
+      const s = (await db.settings.get('settings'))!;
+      return computePoints({
+        habits: await db.habits.toArray(), logs: await db.habitLogs.toArray(), badHabits: await db.badHabits.toArray(),
+        relapses: await db.relapses.toArray(), usageLogs: await db.usageLogs.toArray(), windowLogs: await db.windowLogs.toArray(),
+        focusSessions: await db.focusSessions.toArray(), urges: await db.urges.toArray(), jokers: await db.jokers.toArray(),
+        settings: s, today: '2026-11-12',
+      }).total;
+    };
+    const before = await snapshot();
+    expect(before).toBeGreaterThan(0);
+
+    const backup = await createBackup();
+    expect(backup.schemaVersion).toBe(SCHEMA_VERSION);
+    const text = JSON.stringify(backup);
+    await db.delete();
+    await db.open();
+    await restoreBackup(parseBackup(text));
+
+    expect((await db.settings.get('settings'))!.userName).toBe('Ana');
+    expect(await db.usageLogs.count()).toBe(1);
+    expect(await db.jokers.count()).toBe(1);
+    expect(await db.windowLogs.count()).toBe(1);
+    expect((await db.focusSessions.get(f.id))!.status).toBe('done');
+    expect((await db.urges.get(u.id))!.result).toBe('resisted');
+    expect(await snapshot()).toBe(before);
   });
 });
