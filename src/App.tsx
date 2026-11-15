@@ -29,7 +29,7 @@ function Splash({ error }: { error?: string }) {
 function ScrollToTop() {
   const { pathname } = useLocation();
   useEffect(() => {
-    window.scrollTo(0, 0);
+    document.getElementById('scroll-root')?.scrollTo(0, 0);
   }, [pathname]);
   return null;
 }
@@ -38,8 +38,9 @@ function AppRoutes() {
   const data = useData();
   if (!data) return <Splash />;
   return (
-    <>
+    <div className="app-shell">
       <ScrollToTop />
+      <main id="scroll-root" className="app-main">
       <Routes>
         <Route path="/" element={<Navigate to="/hoy" replace />} />
         <Route path="/hoy" element={<TodayScreen />} />
@@ -59,8 +60,9 @@ function AppRoutes() {
         <Route path="/revision/:week" element={<WeeklyReviewScreen />} />
         <Route path="*" element={<Navigate to="/hoy" replace />} />
       </Routes>
+      </main>
       <BottomNav />
-    </>
+    </div>
   );
 }
 

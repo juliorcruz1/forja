@@ -1,7 +1,10 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { createContext, type ReactNode, useContext, useEffect, useMemo, useState } from 'react';
 import { db } from '../db/db';
-import type { BadHabit, DayMeta, Habit, Relapse, Settings } from '../db/types';
+import type {
+  BadHabit, DayMeta, FocusSession, Habit, HabitLog, Joker, Relapse, Settings, Urge, UsageLog, WindowLog,
+} from '../db/types';
+import { normalizeSettings } from '../config/defaults';
 import { HabitIndex } from '../domain/habits';
 import { type DateKey, todayKey } from '../lib/dates';
 
@@ -13,6 +16,13 @@ export interface AppData {
   dayMeta: DayMeta[];
   idx: HabitIndex;
   today: DateKey;
+  // Stage 2
+  logs: HabitLog[];
+  jokers: Joker[];
+  usageLogs: UsageLog[];
+  windowLogs: WindowLog[];
+  focusSessions: FocusSession[];
+  urges: Urge[];
 }
 
 const Ctx = createContext<AppData | undefined>(undefined);
@@ -21,16 +31,22 @@ const Ctx = createContext<AppData | undefined>(undefined);
 export function DataProvider({ children }: { children: ReactNode }) {
   const today = useToday();
   const raw = useLiveQuery(async () => {
-    const [habits, logs, plans, badHabits, relapses, settings, dayMeta] = await Promise.all([
-      db.habits.toArray(),
-      db.habitLogs.toArray(),
-      db.weekPlans.toArray(),
-      db.badHabits.toArray(),
-      db.relapses.toArray(),
-      db.settings.get('settings'),
-      db.dayMeta.toArray(),
-    ]);
-    return { habits, logs, plans, badHabits, relapses, settings, dayMeta };
+    const [habits, logs, plans, badHabits, relapses, settings, dayMeta, jokers, usageLogs, windowLogs, focusSessions, urges] =
+      await Promise.all([
+        db.habits.toArray(),
+        db.habitLogs.toArray(),
+        db.weekPlans.toArray(),
+        db.badHabits.toArray(),
+        db.relapses.toArray(),
+        db.settings.get('settings'),
+        db.dayMeta.toArray(),
+        db.jokers.toArray(),
+        db.usageLogs.toArray(),
+        db.windowLogs.toArray(),
+        db.focusSessions.toArray(),
+        db.urges.toArray(),
+      ]);
+    return { habits, logs, plans, badHabits, relapses, settings, dayMeta, jokers, usageLogs, windowLogs, focusSessions, urges };
   });
   const value = useMemo<AppData | undefined>(() => {
     if (!raw || !raw.settings) return undefined;
@@ -38,10 +54,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
       habits: [...raw.habits].sort((a, b) => a.order - b.order),
       badHabits: [...raw.badHabits].sort((a, b) => a.order - b.order),
       relapses: raw.relapses,
-      settings: raw.settings,
+      settings: normalizeSettings(raw.settings, today),
       dayMeta: raw.dayMeta,
       idx: new HabitIndex(raw.logs, raw.plans),
       today,
+      logs: raw.logs,
+      jokers: raw.jokers,
+      usageLogs: raw.usageLogs,
+      windowLogs: raw.windowLogs,
+      focusSessions: raw.focusSessions,
+      urges: raw.urges,
     };
   }, [raw, today]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

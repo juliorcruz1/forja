@@ -1,8 +1,9 @@
 /** Versioned JSON backup: export, validate, migrate and import. */
 import { db, SCHEMA_VERSION, TABLES, type TableName } from './db';
 import { nowIso } from '../lib/id';
-import { migrateHabitV1toV2 } from './migrations';
-import type { Habit } from './types';
+import { migrateHabitV1toV2, migrateSettingsV2toV3, withSocialHabit } from './migrations';
+import type { BadHabit, Habit, Settings } from './types';
+import { todayKey } from '../lib/dates';
 
 export const BACKUP_FORMAT = 'forja-backup';
 
@@ -34,6 +35,20 @@ const MIGRATIONS: Record<number, (b: Backup) => Backup> = {
     schemaVersion: 2,
     data: { ...b.data, habits: (b.data.habits as Habit[]).map(migrateHabitV1toV2) },
   }),
+  // v2 -> v3 (Stage 2): same changes as the Dexie upgrade; new tables start empty.
+  2: (b) => {
+    const today = todayKey();
+    const settings = (b.data.settings as Partial<Settings>[]).map((s) => migrateSettingsV2toV3(s, today));
+    return {
+      ...b,
+      schemaVersion: 3,
+      data: {
+        ...b.data,
+        settings,
+        badHabits: settings.length ? withSocialHabit(b.data.badHabits as BadHabit[], today) : b.data.badHabits,
+      },
+    };
+  },
 };
 
 export function migrateBackup(b: Backup): Backup {

@@ -3,18 +3,20 @@ import { db } from './db';
 import type {
   BadHabit, Habit, HabitLog, JournalEntry, LogStatus, Relapse, Settings, Weekday,
 } from './types';
-import { defaultHabits, defaultSettings } from '../config/defaults';
+import { defaultHabits, defaultSettings, defaultSocialHabit, normalizeSettings } from '../config/defaults';
 import { counterStatus } from '../domain/habits';
 import { checklistStatus, validChecked } from '../domain/checklist';
 import { addDays as addDaysSafe, type DateKey, todayKey } from '../lib/dates';
 import { nowIso, uid } from '../lib/id';
 
 export async function ensureSeeded(today: DateKey = todayKey()): Promise<void> {
-  await db.transaction('rw', db.settings, db.habits, async () => {
+  await db.transaction('rw', db.settings, db.habits, db.badHabits, async () => {
     const s = await db.settings.get('settings');
-    if (s) return;
-    await db.settings.put(defaultSettings());
+    if (s) return; // existing install (Stage 1 data is upgraded by the Dexie v3 migration)
+    await db.settings.put(defaultSettings(today));
     if ((await db.habits.count()) === 0) await db.habits.bulkPut(defaultHabits(today));
+    // Suggested limit habit, only on first install: if the user deletes it, it stays deleted.
+    if ((await db.badHabits.count()) === 0) await db.badHabits.put(defaultSocialHabit(today));
   });
 }
 
@@ -310,6 +312,7 @@ export async function setHeavyDay(date: DateKey, heavy: boolean) {
 }
 
 export async function updateSettings(patch: Partial<Settings>) {
-  const s = (await db.settings.get('settings')) ?? defaultSettings();
+  const s = normalizeSettings((await db.settings.get('settings')) ?? defaultSettings());
   await db.settings.put({ ...s, ...patch, id: 'settings', updatedAt: nowIso() });
 }
+

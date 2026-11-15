@@ -91,6 +91,12 @@ export interface BadHabit extends BaseRecord {
   lifecycle: HabitLifecycle;
   archivedAt?: DateKey;
   order: number;
+  /**
+   * 'days' (default): counts days without falling.
+   * 'limit': daily usage limit in minutes (e.g. "Redes / scroll"), logged manually each night.
+   */
+  mode?: 'days' | 'limit';
+  limitMinutes?: number;
 }
 
 export interface Relapse extends BaseRecord {
@@ -142,4 +148,108 @@ export interface Settings extends BaseRecord {
   weekStartsOn: 'monday';
   lastBackupAt?: string;
   seeded: boolean;
+
+  // ---------- Stage 2 (schema v3). Filled with defaults by normalizeSettings. ----------
+  /** Name used in the greeting ("Buenos días, {nombre}"). Editable in Ajustes. */
+  userName: string;
+  points: PointValues;
+  levels: LevelDef[];
+  /** Points and penalties only count from this local date on. */
+  pointsStartDate: DateKey;
+  /** Usual wake-up time per weekday (index 0 = Monday), for the morning phone-free window. */
+  wakeTime: string[];
+  noPhone: NoPhoneConfig;
+  /** Quick replacements shown in "Momento de ganas". */
+  replacements: string[];
+}
+
+export interface PointValues {
+  done: number;
+  min: number;
+  extra: number;
+  hydration: number;
+  perfectDay: number;
+  weeklyGoal: number;
+  streak7: number;
+  streak14: number;
+  streak30: number;
+  badCleanDay: number;
+  /** Penalties are stored as positive numbers and subtracted. */
+  missed: number;
+  dailyPenaltyCap: number;
+  relapse: number;
+  weeklyMissPerDay: number;
+  socialWithin: number;
+  socialOver: number;
+  windowKept: number;
+  focusSession: number;
+  focusMaxPerDay: number;
+  resisted: number;
+}
+
+export interface LevelDef {
+  name: string;
+  min: number;
+}
+
+export interface NoPhoneConfig {
+  morningEnabled: boolean;
+  /** Minutes after waking up. */
+  morningMinutes: number;
+  nightEnabled: boolean;
+  /** Minutes before bedtime. */
+  nightMinutes: number;
+}
+
+/** Weekly wildcard ("comodín"): forgives that day's penalties. id = date */
+export interface Joker extends BaseRecord {
+  date: DateKey;
+  weekStart: DateKey;
+}
+
+/** Minutes used on a limit-mode bad habit (e.g. Redes) for a day. id = `${badHabitId}:${date}` */
+export interface UsageLog extends BaseRecord {
+  badHabitId: string;
+  date: DateKey;
+  minutes: number;
+}
+
+export type WindowKind = 'morning' | 'night';
+
+/** A phone-free window the user started. id = `${date}:${kind}` */
+export interface WindowLog extends BaseRecord {
+  date: DateKey;
+  kind: WindowKind;
+  startedAt: string; // ISO
+  endedAt?: string; // ISO
+  /** Honor system: did you keep it? undefined while it is still open. */
+  kept?: boolean;
+}
+
+export type FocusStatus = 'running' | 'done' | 'cancelled';
+
+/**
+ * Focus session. Time is derived from timestamps (startAt + plannedMin), never
+ * from a running counter, so it survives the app being closed or suspended.
+ */
+export interface FocusSession extends BaseRecord {
+  date: DateKey; // local date of startAt
+  label: string;
+  plannedMin: number;
+  startAt: string; // ISO
+  endAt?: string; // ISO, actual end (done or cancelled)
+  status: FocusStatus;
+}
+
+/** A "Momento de ganas" (urge). */
+export interface Urge extends BaseRecord {
+  date: DateKey;
+  at: string; // ISO time it was opened
+  hour: number; // local hour 0..23
+  situation?: string;
+  feeling?: string;
+  result?: 'resisted' | 'fell';
+  /** Bad habit the fall was registered on (creates a Relapse). */
+  badHabitId?: string;
+  relapseId?: string;
 }

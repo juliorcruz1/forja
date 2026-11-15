@@ -1,15 +1,17 @@
 import Dexie, { type Table } from 'dexie';
 import type {
-  BadHabit, DayMeta, Habit, HabitLog, JournalEntry, Relapse, Settings, WeekPlan, WeeklyReview,
+  BadHabit, DayMeta, FocusSession, Habit, HabitLog, Joker, JournalEntry, Relapse, Settings, Urge, UsageLog,
+  WeekPlan, WeeklyReview, WindowLog,
 } from './types';
-import { migrateHabitV1toV2 } from './migrations';
+import { migrateHabitV1toV2, migrateSettingsV2toV3, withSocialHabit } from './migrations';
+import { todayKey } from '../lib/dates';
 
 /**
  * Versioned schema. To evolve it, add a new `this.version(n)` block with the
  * new stores and an `.upgrade()` migration; never edit an old version.
  * Keep SCHEMA_VERSION in sync — it is also written into JSON backups.
  */
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 export class ForjaDB extends Dexie {
   habits!: Table<Habit, string>;
@@ -21,6 +23,12 @@ export class ForjaDB extends Dexie {
   reviews!: Table<WeeklyReview, string>;
   dayMeta!: Table<DayMeta, string>;
   settings!: Table<Settings, string>;
+  // Stage 2 (v3)
+  jokers!: Table<Joker, string>;
+  usageLogs!: Table<UsageLog, string>;
+  windowLogs!: Table<WindowLog, string>;
+  focusSessions!: Table<FocusSession, string>;
+  urges!: Table<Urge, string>;
 
   constructor(name = 'forja') {
     super(name);
@@ -43,11 +51,33 @@ export class ForjaDB extends Dexie {
           ref.value = migrateHabitV1toV2(h);
         }),
       );
+    // v3 (Stage 2): points, phone control, focus and urges.
+    this.version(3)
+      .stores({
+        jokers: 'id, date, weekStart',
+        usageLogs: 'id, badHabitId, date',
+        windowLogs: 'id, date',
+        focusSessions: 'id, date, status',
+        urges: 'id, date',
+      })
+      .upgrade(async (tx) => {
+        const today = todayKey();
+        await tx.table<Settings, string>('settings').toCollection().modify((s, ref) => {
+          ref.value = migrateSettingsV2toV3(s, today);
+        });
+        // Only existing installs get the suggestion here; fresh installs get it from ensureSeeded.
+        if ((await tx.table('settings').count()) > 0) {
+          const bad = await tx.table<BadHabit, string>('badHabits').toArray();
+          const next = withSocialHabit(bad, today);
+          if (next.length > bad.length) await tx.table('badHabits').add(next[next.length - 1]);
+        }
+      });
   }
 }
 
 export const TABLES = [
   'habits', 'habitLogs', 'weekPlans', 'badHabits', 'relapses', 'journal', 'reviews', 'dayMeta', 'settings',
+  'jokers', 'usageLogs', 'windowLogs', 'focusSessions', 'urges',
 ] as const;
 export type TableName = (typeof TABLES)[number];
 

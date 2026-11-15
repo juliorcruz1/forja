@@ -12,8 +12,8 @@ const TABS = [
 export function BottomNav() {
   return (
     <nav
-      className="fixed bottom-0 inset-x-0 z-40 bg-bg/90 backdrop-blur-xl border-t border-line"
-      style={{ paddingBottom: 'var(--safe-bottom)' }}
+      className="app-nav relative z-40 bg-bg border-t border-line"
+      data-testid="bottom-nav"
       aria-label="Navegación principal"
     >
       <ul className="max-w-[480px] mx-auto grid grid-cols-5">

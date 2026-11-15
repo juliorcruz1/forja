@@ -3,7 +3,8 @@ import Dexie from 'dexie';
 import { describe, expect, it } from 'vitest';
 import { ForjaDB, SCHEMA_VERSION } from './db';
 import { parseBackup } from './backup';
-import type { Habit } from './types';
+import type { Habit, Settings } from './types';
+import { withSocialHabit } from './migrations';
 
 const T = '2026-11-14T10:00:00.000Z';
 const v1Gym = (p: Partial<Habit> = {}): Habit => ({
@@ -37,6 +38,73 @@ describe('schema migration v1 → v2', () => {
   it('importing a v1 backup applies the same migration', () => {
     const b = parseBackup(JSON.stringify({ format: 'forja-backup', schemaVersion: 1, exportedAt: T, data: { habits: [v1Gym()] } }));
     expect(b.schemaVersion).toBe(SCHEMA_VERSION);
+    expect((b.data.habits[0] as Habit).frequency).toMatchObject({ plannedDays: [] });
+  });
+});
+
+describe('schema migration v2 → v3 (Stage 2)', () => {
+  it('upgrades a Stage 1 database: settings get points defaults and the Redes suggestion is added', async () => {
+    const name = 'forja-v2-to-v3';
+    const old = new Dexie(name);
+    old.version(2).stores({
+      habits: 'id, lifecycle, order',
+      habitLogs: 'id, &[habitId+date], habitId, date',
+      weekPlans: 'id, habitId, weekStart',
+      badHabits: 'id, lifecycle, order',
+      relapses: 'id, badHabitId, date',
+      journal: 'id, date',
+      reviews: 'id, weekStart',
+      dayMeta: 'id, date',
+      settings: 'id',
+    });
+    await old.open();
+    const stage1Settings = {
+      id: 'settings', createdAt: T, updatedAt: T, work: [], bedtime: Array(7).fill('22:00'),
+      criticalBedtime: '21:00', earlyStartThreshold: '06:00', weekStartsOn: 'monday', seeded: true, lastBackupAt: T,
+    };
+    await old.table('settings').put(stage1Settings);
+    await old.table('habits').put(v1Gym({ id: 'g', frequency: { type: 'weekly', target: 5, plannedDays: [] } }));
+    await old.table('habitLogs').put({ id: 'l1', habitId: 'g', date: '2026-11-10', status: 'done', createdAt: T, updatedAt: T });
+    old.close();
+
+    const db = new ForjaDB(name);
+    await db.open();
+    expect(db.verno).toBe(3);
+    const s = (await db.settings.get('settings'))!;
+    expect(s.points.done).toBe(10);
+    expect(s.levels.map((l) => l.name)).toEqual(['Chispa', 'Brasa', 'Hierro', 'Acero']);
+    expect(s.userName).toBe('Julior');
+    expect(s.pointsStartDate).toMatch(/^\d{4}-\d{2}-\d{2}$/); // the upgrade day
+    expect(s.lastBackupAt).toBe(T); // Stage 1 values kept
+    const bad = await db.badHabits.toArray();
+    expect(bad).toHaveLength(1);
+    expect(bad[0]).toMatchObject({ name: 'Redes / scroll', mode: 'limit', limitMinutes: 60 });
+    expect(await db.habitLogs.count()).toBe(1); // history untouched
+    expect(await db.focusSessions.count()).toBe(0);
+    db.close();
+  });
+
+  it('does not duplicate Redes if the user already has one', () => {
+    const today = '2026-11-15';
+    const mine = { id: 'x', name: 'Redes sociales', icon: 'smartphone', startDate: today, lifecycle: 'active' as const, order: 0, createdAt: T, updatedAt: T };
+    expect(withSocialHabit([mine], today)).toHaveLength(1);
+  });
+
+  it('imports a Stage 1 (v2) backup: settings migrated, new tables empty', () => {
+    const b = parseBackup(JSON.stringify({
+      format: 'forja-backup', schemaVersion: 2, exportedAt: T,
+      data: { settings: [{ id: 'settings', createdAt: T, updatedAt: T, bedtime: Array(7).fill('22:00') }], habits: [v1Gym()], badHabits: [] },
+    }));
+    expect(b.schemaVersion).toBe(3);
+    expect((b.data.settings[0] as Settings).points.missed).toBe(5);
+    expect((b.data.badHabits[0] as { mode?: string }).mode).toBe('limit');
+    expect(b.data.focusSessions).toEqual([]);
+    expect(b.data.urges).toEqual([]);
+  });
+
+  it('imports a v1 backup through both migrations', () => {
+    const b = parseBackup(JSON.stringify({ format: 'forja-backup', schemaVersion: 1, exportedAt: T, data: { habits: [v1Gym()] } }));
+    expect(b.schemaVersion).toBe(3);
     expect((b.data.habits[0] as Habit).frequency).toMatchObject({ plannedDays: [] });
   });
 });

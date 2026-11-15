@@ -7,3 +7,6 @@ dev-dist
 *.forja.json
 forja-respaldo-*.json
 respaldo*.json
+
+# Local editor/agent config
+.claude/

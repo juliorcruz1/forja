@@ -401,8 +401,8 @@ function ChecklistEditor({ items, onChange }: { items: ChecklistItem[]; onChange
         </div>
       ))}
 
-      {/* Always reachable: sticks above the bottom navigation while the list is on screen */}
-      <div className="sticky z-10 pt-2 pb-1 bg-card" style={{ bottom: 'calc(64px + var(--safe-bottom))' }}>
+      {/* Always reachable: sticks to the bottom of the scroll area (just above the bar) */}
+      <div className="sticky z-10 pt-2 pb-1 bg-card" style={{ bottom: 0 }}>
         <button type="button" className="pill-ghost w-full border-violet/60 text-violet-text" onClick={add}>
           <Plus size={16} /> {items.length ? 'Agregar otro' : 'Agregar elemento'}
         </button>
