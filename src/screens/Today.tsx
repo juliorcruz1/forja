@@ -6,6 +6,7 @@ import type { BadHabit } from '../db/types';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { OneOffSheet } from '../components/OneOffSheet';
 import { WindowCard } from '../components/WindowCard';
+import { GreetingCard } from '../components/GreetingCard';
 import { QuickActions } from '../components/QuickActions';
 import { UsageEntry } from '../components/LimitHabitCard';
 import { isLimitHabit, limitOf, usageOn } from '../domain/social';
@@ -91,6 +92,8 @@ export function TodayScreen() {
           Estás editando un día pasado. Toca aquí para volver a hoy.
         </button>
       )}
+
+      {isToday && <GreetingCard />}
 
       <Card>
         <div className="flex items-center gap-4">

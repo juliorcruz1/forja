@@ -11,6 +11,7 @@ import type { DaySchedule } from '../db/types';
 import { nightInfo } from '../domain/sleep';
 import { useData } from '../hooks/useData';
 import { PhoneSettings, PointsSettings } from '../components/SettingsStage2';
+import { NameSetting, RemindersSection } from '../components/Reminders';
 import { addDays, formatTime, WEEKDAY_NAMES, weekStart } from '../lib/dates';
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -36,6 +37,8 @@ export function SettingsScreen() {
 
   return (
     <Screen title="Ajustes" back="/mas">
+      <NameSetting />
+
       <Link to="/habitos" className="card p-4 flex items-center justify-between active:scale-[0.99] transition">
         <div>
           <p className="font-semibold">Hábitos</p>
@@ -118,6 +121,8 @@ export function SettingsScreen() {
       <PointsSettings />
 
       <PhoneSettings />
+
+      <RemindersSection />
 
       <div ref={backupRef} className="scroll-mt-4">
         <BackupCard lastBackupAt={settings.lastBackupAt} />

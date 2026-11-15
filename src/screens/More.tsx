@@ -1,4 +1,7 @@
-import { ChevronRight, ClipboardList, CloudUpload, Settings, Timer, Trophy, CalendarDays, HeartPulse, SmartphoneNfc, Briefcase } from 'lucide-react';
+import {
+  Bell, Briefcase, CalendarDays, ChevronRight, ClipboardList, CloudUpload, Flame, HeartHandshake, HeartPulse, Printer, Scale,
+  Settings, SmartphoneNfc, Timer, Trophy,
+} from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Logo } from '../components/Logo';
@@ -6,10 +9,10 @@ import { Card, Screen, SectionHeader } from '../components/ui';
 import { BRAND } from '../config/brand';
 
 const SOON = [
-  { label: 'Puntos y niveles', Icon: Trophy },
-  { label: 'Sesiones de concentración', Icon: Timer },
-  { label: 'Ventanas sin celular', Icon: SmartphoneNfc },
+  { label: 'Castigos y deudas', Icon: Scale },
+  { label: 'Impresión semanal', Icon: Printer },
   { label: 'Calendario', Icon: CalendarDays },
+  { label: 'Logros', Icon: Trophy },
   { label: 'Productividad', Icon: Briefcase },
   { label: 'Salud y fitness', Icon: HeartPulse },
 ];
@@ -25,6 +28,11 @@ export function MoreScreen() {
         </div>
       </Card>
       <div className="card divide-y divide-line overflow-hidden">
+        <Row to="/puntos" icon={<Flame size={19} />} label="Puntos y niveles" />
+        <Row to="/concentracion" icon={<Timer size={19} />} label="Concentración" />
+        <Row to="/ganas" icon={<HeartHandshake size={19} />} label="Momento de ganas" />
+        <Row to="/ajustes#celular" icon={<SmartphoneNfc size={19} />} label="Celular y redes" />
+        <Row to="/ajustes#recordatorios" icon={<Bell size={19} />} label="Recordatorios del día" />
         <Row to="/ajustes" icon={<Settings size={19} />} label="Ajustes" />
         <Row to="/revision" icon={<ClipboardList size={19} />} label="Revisión semanal" />
         <Row to="/ajustes#respaldo" icon={<CloudUpload size={19} />} label="Respaldo de datos" />
