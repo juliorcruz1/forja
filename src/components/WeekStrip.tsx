@@ -38,9 +38,9 @@ export function WeekStrip({ habit, idx, today, ws = weekStart(today) }: { habit:
               className="flex flex-col items-center gap-1.5 min-w-[44px]"
               aria-label={`${formatLong(d)}${done ? ', hecho' : planned ? ', planeado' : ''}`}
             >
-              <span className={`text-[11px] font-medium ${isToday ? 'text-ink' : 'text-muted'}`}>{WEEKDAY_LETTER[i]}</span>
+              <span className={`text-[0.6875rem] font-medium ${isToday ? 'text-ink' : 'text-muted'}`}>{WEEKDAY_LETTER[i]}</span>
               <span
-                className={`w-9 h-9 rounded-full flex items-center justify-center text-[13px] font-semibold transition ${cls} ${
+                className={`w-9 h-9 rounded-full flex items-center justify-center text-[0.8125rem] font-semibold transition ${cls} ${
                   isToday ? 'ring-2 ring-offset-2 ring-offset-card ring-ink/80' : ''
                 }`}
               >
@@ -50,7 +50,7 @@ export function WeekStrip({ habit, idx, today, ws = weekStart(today) }: { habit:
           );
         })}
       </div>
-      <div className="flex gap-4 mt-3 text-[11px] text-muted">
+      <div className="flex gap-4 mt-3 text-[0.6875rem] text-muted">
         <span className="flex items-center gap-1.5"><i className="w-2.5 h-2.5 rounded-full bg-violet" />Hecho</span>
         <span className="flex items-center gap-1.5"><i className="w-2.5 h-2.5 rounded-full border border-dashed border-violet" />Planeado</span>
         <span className="flex items-center gap-1.5"><i className="w-2.5 h-2.5 rounded-full bg-blue" />Día extra</span>
@@ -74,7 +74,7 @@ export function WeekStrip({ habit, idx, today, ws = weekStart(today) }: { habit:
             <button className="pill-ghost w-full" onClick={() => { togglePlan(sel); setSel(null); }}>
               {goal.planned.includes(days.indexOf(sel) as Weekday) ? 'Quitar de planeados' : 'Planear este día'}
             </button>
-            <p className="text-[12px] text-muted text-center pt-1">
+            <p className="text-[0.75rem] text-muted text-center pt-1">
               Cambiar los días planeados solo afecta la semana del {formatLong(ws).split(', ')[1]} al {formatLong(addDays(ws, 6)).split(', ')[1]}.
             </p>
           </div>

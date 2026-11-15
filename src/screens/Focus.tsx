@@ -48,27 +48,27 @@ export function FocusScreen() {
     <Screen title="Concentración" back>
       {running ? (
         <Card className="text-center py-8">
-          <p className="text-[13px] text-muted">
+          <p className="text-[0.8125rem] text-muted">
             {running.label} · {running.plannedMin} min
           </p>
-          <p className="text-[72px] leading-none font-bold tracking-tight tabular-nums mt-3" aria-label="Tiempo restante">
+          <p className="text-[4.5rem] leading-none font-bold tracking-tight tabular-nums mt-3" aria-label="Tiempo restante">
             {formatClock(remainingMs(running, now))}
           </p>
-          <p className="text-[13px] text-night-text mt-4 flex items-center justify-center gap-2">
+          <p className="text-[0.8125rem] text-night-text mt-4 flex items-center justify-center gap-2">
             <Smartphone size={15} /> Deja el celular boca abajo y lejos.
           </p>
-          <p className="text-[12px] text-dim mt-1">
+          <p className="text-[0.75rem] text-dim mt-1">
             Termina a las {endTime(plannedEnd(running))}. Si cierras la app, el tiempo sigue contando.
           </p>
           <button className="pill-ghost w-full mt-6" onClick={() => cancelFocus(running.id)}>
             Cancelar
           </button>
-          <p className="text-[11px] text-dim mt-2">Cancelar no resta puntos; solo no cuenta.</p>
+          <p className="text-[0.6875rem] text-dim mt-2">Cancelar no resta puntos; solo no cuenta.</p>
         </Card>
       ) : (
         <Card>
           {justDone && (
-            <p className="rounded-xl bg-violet-soft text-violet-text text-[14px] font-medium px-3 py-2 mb-4" role="status">
+            <p className="rounded-xl bg-violet-soft text-violet-text text-[0.875rem] font-medium px-3 py-2 mb-4" role="status">
               ¡Sesión completa!{' '}
               {day.sessions <= P.focusMaxPerDay ? `+${P.focusSession} pts` : 'Ya sumaste el máximo de hoy, pero el tiempo cuenta.'}
             </p>
@@ -97,7 +97,7 @@ export function FocusScreen() {
               </button>
             ))}
           </div>
-          <p className="text-[13px] text-muted mt-4 flex items-center gap-2">
+          <p className="text-[0.8125rem] text-muted mt-4 flex items-center gap-2">
             <Smartphone size={15} /> Antes de empezar: celular boca abajo y en No molestar.
           </p>
           <button
@@ -114,16 +114,16 @@ export function FocusScreen() {
 
       <div className="grid grid-cols-2 gap-3.5">
         <Card>
-          <p className="text-[12px] text-muted">Hoy</p>
+          <p className="text-[0.75rem] text-muted">Hoy</p>
           <p className="text-2xl font-bold mt-1">{formatMinutes(day.minutes)}</p>
-          <p className="text-[11px] text-dim">
+          <p className="text-[0.6875rem] text-dim">
             {day.sessions} {day.sessions === 1 ? 'sesión' : 'sesiones'} · máx. {P.focusMaxPerDay} con puntos
           </p>
         </Card>
         <Card>
-          <p className="text-[12px] text-muted">Esta semana</p>
+          <p className="text-[0.75rem] text-muted">Esta semana</p>
           <p className="text-2xl font-bold mt-1">{formatMinutes(week.minutes)}</p>
-          <p className="text-[11px] text-dim">
+          <p className="text-[0.6875rem] text-dim">
             {week.sessions} {week.sessions === 1 ? 'sesión' : 'sesiones'}
           </p>
         </Card>
@@ -134,9 +134,9 @@ export function FocusScreen() {
           <SectionHeader title="Sesiones recientes" />
           <div className="card divide-y divide-line">
             {recent.map((s) => (
-              <div key={s.id} className="flex items-center justify-between gap-3 px-4 min-h-[48px] text-[14px]">
+              <div key={s.id} className="flex items-center justify-between gap-3 px-4 min-h-[48px] text-[0.875rem]">
                 <span className="min-w-0 truncate">{s.label}</span>
-                <span className="text-muted text-[12px] shrink-0">
+                <span className="text-muted text-[0.75rem] shrink-0">
                   {formatShort(s.date)} · {s.status === 'done' ? `${s.plannedMin} min` : 'cancelada'}
                 </span>
               </div>
@@ -144,7 +144,7 @@ export function FocusScreen() {
           </div>
         </>
       )}
-      <p className="text-[11px] text-dim px-1">
+      <p className="text-[0.6875rem] text-dim px-1">
         En iPhone los temporizadores no corren en segundo plano: FORJA calcula el tiempo con la hora de inicio y la de fin, y
         lo recalcula al volver a abrir la app.
       </p>

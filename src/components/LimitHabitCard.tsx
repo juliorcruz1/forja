@@ -16,11 +16,11 @@ export function UsageBar({ minutes, limit }: { minutes: number | undefined; limi
   return (
     <div>
       <div className="flex items-baseline justify-between">
-        <p className="text-[28px] leading-none font-bold">
+        <p className="text-[1.75rem] leading-none font-bold">
           {minutes === undefined ? '—' : m}
-          <span className="text-[14px] font-medium text-muted"> / {limit} min</span>
+          <span className="text-[0.875rem] font-medium text-muted"> / {limit} min</span>
         </p>
-        <span className={`text-[12px] ${over ? 'text-muted' : 'text-violet-text'}`}>
+        <span className={`text-[0.75rem] ${over ? 'text-muted' : 'text-violet-text'}`}>
           {minutes === undefined ? 'Sin anotar' : over ? `${m - limit} min de más` : 'Dentro del límite'}
         </span>
       </div>
@@ -53,7 +53,7 @@ export function UsageEntry({ bad, compact = false }: { bad: BadHabit; compact?: 
 
   return (
     <div className={compact ? '' : 'card2 p-3'}>
-      {!compact && <p className="text-[12px] text-muted mb-2">Anota los minutos del Tiempo en pantalla de tu iPhone</p>}
+      {!compact && <p className="text-[0.75rem] text-muted mb-2">Anota los minutos del Tiempo en pantalla de tu iPhone</p>}
       <div className="flex gap-2 items-center">
         <div className="flex rounded-full border border-line2 p-0.5 shrink-0">
           {[today, addDays(today, -1)].map((d) => (
@@ -61,7 +61,7 @@ export function UsageEntry({ bad, compact = false }: { bad: BadHabit; compact?: 
               key={d}
               type="button"
               onClick={() => setDate(d)}
-              className={`px-2.5 min-h-[36px] rounded-full text-[12px] ${date === d ? 'bg-card2 text-ink' : 'text-muted'}`}
+              className={`hit px-2.5 min-h-[36px] rounded-full text-[0.75rem] ${date === d ? 'bg-card2 text-ink' : 'text-muted'}`}
             >
               {d === today ? 'Hoy' : 'Ayer'}
             </button>
@@ -105,7 +105,7 @@ export function LimitHabitCard({ bad }: { bad: BadHabit }) {
           </span>
           <div className="min-w-0">
             <p className="font-semibold truncate">{bad.name}</p>
-            <p className="text-[12px] text-muted">Límite diario: {limit} min</p>
+            <p className="text-[0.75rem] text-muted">Límite diario: {limit} min</p>
           </div>
         </div>
         <Link to={`/malos/${bad.id}/editar`} className="icon-btn -mr-2 -mt-1" aria-label="Editar">
@@ -131,7 +131,7 @@ export function LimitHabitCard({ bad }: { bad: BadHabit }) {
         </div>
         <div className="flex gap-[5px] mt-1">
           {trend.days.map((d) => (
-            <span key={d.date} className={`flex-1 text-center text-[9px] ${d.date === today ? 'text-ink' : 'text-dim'}`}>
+            <span key={d.date} className={`flex-1 text-center text-[0.5625rem] ${d.date === today ? 'text-ink' : 'text-dim'}`}>
               {WEEKDAY_LETTER[weekday(d.date)]}
             </span>
           ))}
@@ -141,29 +141,29 @@ export function LimitHabitCard({ bad }: { bad: BadHabit }) {
       <div className="grid grid-cols-3 gap-2 mt-3 text-center">
         <div className="card2 p-2">
           <p className="text-lg font-bold">{week.average ?? '—'}</p>
-          <p className="text-[10px] text-muted">Promedio 7 días</p>
+          <p className="text-[0.625rem] text-muted">Promedio 7 días</p>
         </div>
         <div className="card2 p-2">
           <p className="text-lg font-bold">{month.average ?? '—'}</p>
-          <p className="text-[10px] text-muted">Promedio 30 días</p>
+          <p className="text-[0.625rem] text-muted">Promedio 30 días</p>
         </div>
         <div className="card2 p-2">
           <p className="text-lg font-bold">{streak}</p>
-          <p className="text-[10px] text-muted">Días seguidos en límite</p>
+          <p className="text-[0.625rem] text-muted">Días seguidos en límite</p>
         </div>
       </div>
 
       {bad.lifecycle === 'active' ? (
         <div className="mt-3">
           <UsageEntry bad={bad} />
-          <p className="text-[11px] text-dim mt-2">
+          <p className="text-[0.6875rem] text-dim mt-2">
             FORJA no puede leer ni bloquear apps: el límite real lo pones en Ajustes del iPhone → Tiempo en pantalla.
             Aquí registras y ves tu tendencia.
           </p>
         </div>
       ) : (
         <div className="flex items-center justify-between gap-2 mt-4 pt-3 border-t border-line">
-          <span className="text-[12px] text-muted">{bad.lifecycle === 'archived' ? 'Archivado' : 'En pausa'}</span>
+          <span className="text-[0.75rem] text-muted">{bad.lifecycle === 'archived' ? 'Archivado' : 'En pausa'}</span>
           <button className="pill-ghost min-h-[40px] text-violet-text" onClick={() => setBadHabitLifecycle(bad.id, 'active')}>
             {bad.lifecycle === 'archived' ? <RotateCcw size={15} /> : <Play size={15} />}
             {bad.lifecycle === 'archived' ? 'Restaurar' : 'Reanudar'}

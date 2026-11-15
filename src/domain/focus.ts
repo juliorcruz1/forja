@@ -11,7 +11,8 @@ export const plannedEnd = (s: FocusSession) => new Date(s.startAt).getTime() + s
 /** Milliseconds left (0 when finished). */
 export function remainingMs(s: FocusSession, now: Date = new Date()): number {
   if (s.status !== 'running') return 0;
-  return Math.max(0, plannedEnd(s) - now.getTime());
+  // Never more than the planned length, even if the clock was read just before the start.
+  return Math.min(s.plannedMin * 60000, Math.max(0, plannedEnd(s) - now.getTime()));
 }
 
 /** Running sessions whose planned end already passed (e.g. app was closed): they count as done. */

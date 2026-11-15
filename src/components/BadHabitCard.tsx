@@ -34,11 +34,11 @@ export function BadHabitCard({ bad }: { bad: BadHabit }) {
 
       <div className="flex items-end justify-between mt-3">
         <div>
-          <p className="text-[52px] leading-none font-bold tracking-tight">{stats.current}</p>
-          <p className="text-[13px] text-muted mt-1">{stats.current === 1 ? 'día sin caer' : 'días sin caer'}</p>
+          <p className="text-[3.25rem] leading-none font-bold tracking-tight">{stats.current}</p>
+          <p className="text-[0.8125rem] text-muted mt-1">{stats.current === 1 ? 'día sin caer' : 'días sin caer'}</p>
         </div>
         <div className="text-right">
-          <p className="text-[12px] text-muted">Mejor marca</p>
+          <p className="text-[0.75rem] text-muted">Mejor marca</p>
           <p className="text-lg font-semibold text-violet-text">{stats.best} días</p>
         </div>
       </div>
@@ -52,7 +52,7 @@ export function BadHabitCard({ bad }: { bad: BadHabit }) {
           />
         ))}
       </div>
-      <div className="flex justify-between text-[11px] text-dim mt-1.5">
+      <div className="flex justify-between text-[0.6875rem] text-dim mt-1.5">
         <span>Hace 14 días</span>
         <span>Hoy</span>
       </div>
@@ -61,25 +61,25 @@ export function BadHabitCard({ bad }: { bad: BadHabit }) {
         <div className="grid grid-cols-2 gap-2 mt-4">
           {bad.trigger && (
             <div className="card2 p-3">
-              <p className="text-[11px] text-muted mb-1">Cuándo me da</p>
-              <p className="text-[13px]">{bad.trigger}</p>
+              <p className="text-[0.6875rem] text-muted mb-1">Cuándo me da</p>
+              <p className="text-[0.8125rem]">{bad.trigger}</p>
             </div>
           )}
           {bad.replacement && (
             <div className="card2 p-3">
-              <p className="text-[11px] text-muted mb-1">En vez de eso</p>
-              <p className="text-[13px]">{bad.replacement}</p>
+              <p className="text-[0.6875rem] text-muted mb-1">En vez de eso</p>
+              <p className="text-[0.8125rem]">{bad.replacement}</p>
             </div>
           )}
         </div>
       )}
 
       {stats.lastRelapse && (
-        <p className="text-[12px] text-dim mt-3">Última recaída: {formatLong(stats.lastRelapse.date)}</p>
+        <p className="text-[0.75rem] text-dim mt-3">Última recaída: {formatLong(stats.lastRelapse.date)}</p>
       )}
 
       {justRelapsed && (
-        <div className="card2 p-3 mt-3 text-[13px] text-night-text bg-night-bg border-night-line">
+        <div className="card2 p-3 mt-3 text-[0.8125rem] text-night-text bg-night-bg border-night-line">
           <p className="font-semibold mb-0.5">{BRAND.comebackTitle}</p>
           <p>{BRAND.relapseBody}</p>
         </div>
@@ -95,10 +95,10 @@ export function BadHabitCard({ bad }: { bad: BadHabit }) {
           </button>
         </div>
       )}
-      {bad.lifecycle === 'active' && !justRelapsed && <p className="text-[12px] text-dim mt-3">{BRAND.relapseBody}</p>}
+      {bad.lifecycle === 'active' && !justRelapsed && <p className="text-[0.75rem] text-dim mt-3">{BRAND.relapseBody}</p>}
       {bad.lifecycle !== 'active' && (
         <div className="flex items-center justify-between gap-2 mt-4 pt-3 border-t border-line">
-          <span className="text-[12px] text-muted">
+          <span className="text-[0.75rem] text-muted">
             {bad.lifecycle === 'archived' ? `Archivado${bad.archivedAt ? ` el ${formatShort(bad.archivedAt)}` : ''}` : 'En pausa'}
           </span>
           <button className="pill-ghost min-h-[40px] text-violet-text" onClick={() => setBadHabitLifecycle(bad.id, 'active')}>
@@ -156,7 +156,7 @@ function RelapseHistory({ open, onClose, list }: { open: boolean; onClose: () =>
               <li key={r.id} className="flex items-center gap-2 py-2">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm">{formatLong(r.date)}</p>
-                  {r.note && <p className="text-[12px] text-muted truncate">{r.note}</p>}
+                  {r.note && <p className="text-[0.75rem] text-muted truncate">{r.note}</p>}
                 </div>
                 <button className="icon-btn" aria-label="Editar recaída" onClick={() => setEditing(r)}>
                   <Pencil size={16} />
@@ -174,7 +174,7 @@ function RelapseHistory({ open, onClose, list }: { open: boolean; onClose: () =>
             ))}
           </ul>
         )}
-        <p className="text-[12px] text-dim mt-3">Si registraste una recaída por error, bórrala y tu contador se recalcula.</p>
+        <p className="text-[0.75rem] text-dim mt-3">Si registraste una recaída por error, bórrala y tu contador se recalcula.</p>
       </Sheet>
       {editing && (
         <RelapseSheet

@@ -94,7 +94,7 @@ export function BadHabitFormScreen() {
           <>
             <label className="label mt-3" htmlFor="limit">Límite por día (minutos)</label>
             <input id="limit" type="number" inputMode="numeric" min={1} className="field" value={limit} onChange={(e) => setLimit(e.target.value)} />
-            <p className="text-[12px] text-dim mt-1.5 mb-3">
+            <p className="text-[0.75rem] text-dim mt-1.5 mb-3">
               Cada noche anotas los minutos del Tiempo en pantalla. Dentro del límite suma, pasarte resta (con el tope diario).
             </p>
           </>

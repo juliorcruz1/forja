@@ -22,7 +22,7 @@ export function BottomNav() {
             <NavLink
               to={to}
               className={({ isActive }) =>
-                `flex flex-col items-center justify-center gap-1 h-[60px] text-[11px] font-medium transition ${isActive ? 'text-violet-text' : 'text-dim'}`
+                `flex flex-col items-center justify-center gap-1 min-h-[60px] py-1.5 text-[0.6875rem] leading-tight font-medium transition ${isActive ? 'text-violet-text' : 'text-dim'}`
               }
             >
               {({ isActive }) => (

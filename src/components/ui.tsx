@@ -21,8 +21,8 @@ export function Screen({
             </button>
           )}
           <div className="min-w-0">
-            {subtitle && <p className="text-[13px] text-muted font-medium mb-0.5 truncate">{subtitle}</p>}
-            <h1 className="text-[28px] leading-tight font-bold tracking-tight truncate">{title}</h1>
+            {subtitle && <p className="text-[0.8125rem] text-muted font-medium mb-0.5 line-clamp-2">{subtitle}</p>}
+            <h1 className="text-[1.75rem] leading-tight font-bold tracking-tight truncate">{title}</h1>
           </div>
         </div>
         {right && <div className="flex items-center gap-1 shrink-0">{right}</div>}
@@ -158,7 +158,7 @@ export function Toggle({ checked, onChange, label }: { checked: boolean; onChang
       onClick={() => onChange(!checked)}
       className="min-h-[44px] flex items-center"
     >
-      <span className={`w-[50px] h-[30px] rounded-full p-[3px] transition ${checked ? 'bg-violet' : 'bg-line2'}`}>
+      <span className={`w-[3.125rem] h-[1.875rem] rounded-full p-[3px] transition ${checked ? 'bg-violet' : 'bg-line2'}`}>
         <span className={`block w-6 h-6 rounded-full bg-white transition ${checked ? 'translate-x-5' : ''}`} />
       </span>
     </button>
@@ -173,7 +173,7 @@ export function Segmented<T extends string>({ value, options, onChange }: { valu
           key={o.value}
           type="button"
           onClick={() => onChange(o.value)}
-          className={`flex-1 min-h-[40px] rounded-full text-sm font-medium transition ${value === o.value ? 'bg-card2 text-ink border border-line2' : 'text-muted'}`}
+          className={`flex-1 min-h-[44px] rounded-full text-sm font-medium transition ${value === o.value ? 'bg-card2 text-ink border border-line2' : 'text-muted'}`}
         >
           {o.label}
         </button>

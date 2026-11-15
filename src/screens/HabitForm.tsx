@@ -120,7 +120,7 @@ export function HabitFormScreen() {
         <div className="flex gap-2">
           <button
             type="button"
-            className="w-[50px] h-[50px] shrink-0 rounded-xl bg-violet-soft text-violet-text flex items-center justify-center border border-line2"
+            className="w-[3.125rem] h-[3.125rem] shrink-0 rounded-xl bg-violet-soft text-violet-text flex items-center justify-center border border-line2"
             onClick={() => setIconOpen(true)}
             aria-label="Elegir ícono"
           >
@@ -179,8 +179,8 @@ export function HabitFormScreen() {
 
         <div className="flex items-center justify-between mt-4">
           <div>
-            <p className="text-[15px]">Obligatorio</p>
-            <p className="text-[12px] text-muted">Si lo apagas, va a "Extras": suma como bonus y nunca cuenta como fallo.</p>
+            <p className="text-[0.9375rem]">Obligatorio</p>
+            <p className="text-[0.75rem] text-muted">Si lo apagas, va a "Extras": suma como bonus y nunca cuenta como fallo.</p>
           </div>
           <Toggle checked={f.required} onChange={(v) => set('required', v)} label="Obligatorio" />
         </div>
@@ -198,8 +198,8 @@ export function HabitFormScreen() {
         </datalist>
         <div className="flex items-center justify-between mt-4">
           <div>
-            <p className="text-[15px]">Ligado a la hora de dormir</p>
-            <p className="text-[12px] text-muted">Muestra tu hora de acostarte del día.</p>
+            <p className="text-[0.9375rem]">Ligado a la hora de dormir</p>
+            <p className="text-[0.75rem] text-muted">Muestra tu hora de acostarte del día.</p>
           </div>
           <Toggle checked={f.sleepLinked} onChange={(v) => set('sleepLinked', v)} label="Ligado a dormir" />
         </div>
@@ -223,7 +223,7 @@ export function HabitFormScreen() {
               <button className="pill-ghost" onClick={() => restoreHabit(existing.id)}>Restaurar</button>
             )}
           </div>
-          <p className="text-[12px] text-dim mt-3">
+          <p className="text-[0.75rem] text-dim mt-3">
             Pausar o archivar conserva todo el historial; los días en pausa no cuentan ni rompen rachas.
           </p>
           <button className="pill w-full mt-3 text-[#F2A7A7] border border-line2" onClick={() => setConfirmDelete(true)}>
@@ -298,10 +298,10 @@ function ChecklistEditor({ items, onChange }: { items: ChecklistItem[]; onChange
   return (
     <div className="mt-4 space-y-2.5">
       <div className="flex items-baseline justify-between">
-        <p className="text-[15px] font-semibold">Elementos de la lista</p>
-        <span className="text-[12px] text-muted">{named} {named === 1 ? 'elemento' : 'elementos'}</span>
+        <p className="text-[0.9375rem] font-semibold">Elementos de la lista</p>
+        <span className="text-[0.75rem] text-muted">{named} {named === 1 ? 'elemento' : 'elementos'}</span>
       </div>
-      <p className="text-[12px] text-muted">
+      <p className="text-[0.75rem] text-muted">
         Agrega los que quieras. Completo = todos los obligatorios marcados. Mínimo = todos los esenciales marcados.
         La app no sugiere productos ni dosis: solo registra lo que tú escribes.
       </p>
@@ -309,7 +309,7 @@ function ChecklistEditor({ items, onChange }: { items: ChecklistItem[]; onChange
       {items.map((it, i) => (
         <div key={it.id} className="card2 p-3 space-y-2.5" data-testid="checklist-item">
           <div className="flex items-center gap-1.5">
-            <span className="w-6 text-center text-[13px] font-semibold text-muted shrink-0">{i + 1}</span>
+            <span className="w-6 text-center text-[0.8125rem] font-semibold text-muted shrink-0">{i + 1}</span>
             <input
               className="field"
               value={it.name}
@@ -330,7 +330,7 @@ function ChecklistEditor({ items, onChange }: { items: ChecklistItem[]; onChange
             onChange={(e) => update(it.id, { note: e.target.value })}
           />
           <div>
-            <p className="text-[12px] text-muted mb-1.5">Momento del día</p>
+            <p className="text-[0.75rem] text-muted mb-1.5">Momento del día</p>
             <div className="flex gap-2 flex-wrap">
               {TIMES_OF_DAY.map((t) => (
                 <button
@@ -408,7 +408,7 @@ function ChecklistEditor({ items, onChange }: { items: ChecklistItem[]; onChange
         </button>
       </div>
       {items.some((i) => !i.name.trim()) && (
-        <p className="text-[12px] text-dim">Los elementos sin nombre no se guardan.</p>
+        <p className="text-[0.75rem] text-dim">Los elementos sin nombre no se guardan.</p>
       )}
     </div>
   );

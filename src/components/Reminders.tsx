@@ -29,7 +29,7 @@ export function NameSetting() {
         onBlur={save}
         onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
       />
-      <p className="text-[12px] text-dim mt-1.5">Se usa en el saludo del Inicio. Vive solo en este teléfono.</p>
+      <p className="text-[0.75rem] text-dim mt-1.5">Se usa en el saludo del Inicio. Vive solo en este teléfono.</p>
     </Card>
   );
 }
@@ -58,9 +58,9 @@ function CopyRow({ label, text }: { label: string; text: string }) {
   return (
     <div className="card2 p-3">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[13px] font-semibold">{label}</span>
+        <span className="text-[0.8125rem] font-semibold">{label}</span>
         <button
-          className="chip-off text-[12px] gap-1.5"
+          className="chip-off text-[0.75rem] gap-1.5"
           onClick={async () => {
             if (await copyText(text)) {
               setCopied(true);
@@ -72,7 +72,7 @@ function CopyRow({ label, text }: { label: string; text: string }) {
           {copied ? <Check size={13} /> : <Copy size={13} />} {copied ? 'Copiado' : 'Copiar'}
         </button>
       </div>
-      <p className="text-[14px] text-muted mt-1.5">{text}</p>
+      <p className="text-[0.875rem] text-muted mt-1.5 [overflow-wrap:anywhere]">{text}</p>
     </div>
   );
 }
@@ -94,11 +94,11 @@ export function RemindersSection() {
     <Card>
       <div id="recordatorios" className="scroll-mt-4" />
       <p className="font-semibold mb-1">Recordatorios del día</p>
-      <p className="text-[12px] text-muted mb-3">
+      <p className="text-[0.75rem] text-muted mb-3">
         FORJA no puede mandarte notificaciones a una hora fija (necesitaría un servidor). Con la app Atajos del iPhone
         creas 3 recordatorios diarios en un par de minutos.
       </p>
-      <ol className="text-[13px] space-y-2 list-decimal pl-5 mb-4">
+      <ol className="text-[0.8125rem] space-y-2 list-decimal pl-5 mb-4">
         <li>Abre <b>Atajos</b> → pestaña <b>Automatización</b> → <b>+</b> (Nueva automatización).</li>
         <li>Elige <b>Hora del día</b>, pon la hora (por ejemplo 6:30 a. m.), <b>Diariamente</b> y <b>Ejecutar inmediatamente</b>.</li>
         <li>Toca <b>Nueva automatización en blanco</b> y agrega la acción <b>Mostrar notificación</b>.</li>
@@ -109,7 +109,7 @@ export function RemindersSection() {
         {texts.map((t) => <CopyRow key={t.time} label={t.time} text={t.text} />)}
         <CopyRow label="Dirección de FORJA" text={APP_URL} />
       </div>
-      <p className="text-[12px] text-dim mt-3">
+      <p className="text-[0.75rem] text-dim mt-3">
         Importante: en iPhone, la app instalada guarda tus datos aparte de Safari. Si agregas la acción “Abrir URL”, se abre
         Safari y ahí no verás tus datos; por eso es mejor abrir FORJA desde su ícono.
       </p>

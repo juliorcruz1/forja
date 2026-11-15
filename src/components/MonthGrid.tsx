@@ -8,13 +8,13 @@ export function MonthGrid({
 }: { habit: Habit; idx: HabitIndex; today: DateKey; month: DateKey; onDay?: (d: DateKey) => void; compact?: boolean }) {
   const days = monthDays(month);
   const lead = weekday(days[0]);
-  const size = compact ? 'w-[13px] h-[13px] rounded-[4px]' : 'aspect-square rounded-full text-[12px]';
+  const size = compact ? 'w-[13px] h-[13px] rounded-[4px]' : 'aspect-square rounded-full text-[0.75rem]';
   return (
     <div>
       {!compact && (
         <div className="grid grid-cols-7 gap-1.5 mb-1.5">
           {WEEKDAY_LETTER.map((l) => (
-            <span key={l} className="text-center text-[11px] text-dim">{l}</span>
+            <span key={l} className="text-center text-[0.6875rem] text-dim">{l}</span>
           ))}
         </div>
       )}
@@ -41,7 +41,7 @@ export function MonthGrid({
               type="button"
               disabled={!onDay || d > today}
               onClick={() => onDay?.(d)}
-              className={`${size} ${cls} ${ring} flex items-center justify-center font-medium`}
+              className={`${compact ? '' : 'hit'} ${size} ${cls} ${ring} flex items-center justify-center font-medium`}
               aria-label={d}
             >
               {compact ? '' : Number(d.slice(8))}

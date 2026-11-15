@@ -23,7 +23,7 @@ function Splash({ error }: { error?: string }) {
   return (
     <div className="fixed inset-0 flex flex-col items-center justify-center gap-4 bg-bg">
       <Logo size={96} />
-      <p className="text-[13px] font-semibold tracking-[0.3em] text-muted">{BRAND.name}</p>
+      <p className="text-[0.8125rem] font-semibold tracking-[0.3em] text-muted">{BRAND.name}</p>
       {error && <p className="text-sm text-muted px-8 text-center">{error}</p>}
     </div>
   );

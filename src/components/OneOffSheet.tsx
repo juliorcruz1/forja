@@ -33,7 +33,7 @@ export function OneOffSheet({
 
   return (
     <Sheet open={open} onClose={onClose} title={habit ? 'Editar "solo para hoy"' : 'Solo para hoy'}>
-      <p className="text-[13px] text-muted -mt-1 mb-4">
+      <p className="text-[0.8125rem] text-muted -mt-1 mb-4">
         {formatLong(habit?.oneOffDate ?? date)} · Cuenta como extra: no afecta tu porcentaje ni tus rachas.
       </p>
       <label className="label" htmlFor="oneoff-name">Nombre</label>
@@ -70,7 +70,7 @@ export function OneOffSheet({
       {habit &&
         (confirmDelete ? (
           <div className="card2 p-3 mt-3">
-            <p className="text-[13px] text-muted mb-3">Se borrará "{habit.name}" y su registro de este día. No se puede deshacer.</p>
+            <p className="text-[0.8125rem] text-muted mb-3">Se borrará "{habit.name}" y su registro de este día. No se puede deshacer.</p>
             <div className="grid grid-cols-2 gap-2">
               <button className="pill-ghost" onClick={() => setConfirmDelete(false)}>Cancelar</button>
               <button

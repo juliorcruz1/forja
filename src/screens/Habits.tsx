@@ -95,7 +95,7 @@ function GoodHabits({ filter }: { filter: HabitLifecycle }) {
                   </span>
                   <div>
                     <p className="font-semibold">{h.name}</p>
-                    <p className="text-[13px] text-muted">Meta semanal</p>
+                    <p className="text-[0.8125rem] text-muted">Meta semanal</p>
                   </div>
                 </div>
                 <p className="text-2xl font-bold">
@@ -103,7 +103,7 @@ function GoodHabits({ filter }: { filter: HabitLifecycle }) {
                 </p>
               </Link>
               <WeekStrip habit={h} idx={idx} today={today} />
-              <p className="text-[13px] text-muted mt-3">
+              <p className="text-[0.8125rem] text-muted mt-3">
                 {g.state === 'met'
                   ? g.message
                   : `${g.message.replace(/\.$/, '')}. Toca un día para planearlo o moverlo.`}
@@ -136,7 +136,7 @@ function GoodHabits({ filter }: { filter: HabitLifecycle }) {
             ))}
           </div>
           <MonthGrid habit={monthHabit} idx={idx} today={today} month={month} onDay={(d) => setEdit({ habit: monthHabit, date: d })} />
-          <p className="text-[12px] text-dim mt-3">Toca un día para editar su registro.</p>
+          <p className="text-[0.75rem] text-dim mt-3">Toca un día para editar su registro.</p>
         </Card>
       )}
 
@@ -168,7 +168,7 @@ function HabitRowCard({ habit }: { habit: Habit }) {
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2">
           <p className="font-medium truncate">{habit.name}</p>
-          <span className="flex items-center gap-1 text-[13px] text-muted shrink-0">
+          <span className="flex items-center gap-1 text-[0.8125rem] text-muted shrink-0">
             <Flame size={14} className="text-violet-text" />
             {s.current} {s.unit === 'semanas' ? 'sem' : 'd'}
           </span>
@@ -176,16 +176,16 @@ function HabitRowCard({ habit }: { habit: Habit }) {
         {habit.required ? (
           <div className="flex items-center gap-2 mt-2">
             <Bar pct={t.pct ?? 0} className="flex-1" />
-            <span className="text-[12px] text-muted w-9 text-right">{t.pct === null ? '—' : `${t.pct}%`}</span>
+            <span className="text-[0.75rem] text-muted w-9 text-right">{t.pct === null ? '—' : `${t.pct}%`}</span>
           </div>
         ) : (
-          <p className="text-[12px] text-blue-text mt-1">Extra · opcional</p>
+          <p className="text-[0.75rem] text-blue-text mt-1">Extra · opcional</p>
         )}
       </div>
     </Link>
     {inactive && (
       <div className="flex items-center justify-between gap-2 px-4 py-2">
-        <span className="text-[12px] text-muted">
+        <span className="text-[0.75rem] text-muted">
           {habit.lifecycle === 'archived' && habit.archivedAt ? `Archivado el ${formatShort(habit.archivedAt)}` : 'En pausa'}
         </span>
         <button

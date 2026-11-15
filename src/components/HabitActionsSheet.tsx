@@ -50,7 +50,7 @@ export function HabitActionsSheet({
 
   return (
     <Sheet open onClose={onClose} title={name}>
-      <div className="flex items-center gap-2 text-[13px] text-muted -mt-2 mb-4">
+      <div className="flex items-center gap-2 text-[0.8125rem] text-muted -mt-2 mb-4">
         <HabitIcon name={icon} size={15} />
         <span>{target.kind === 'good' ? 'Hábito' : 'Hábito malo'}</span>
       </div>
@@ -79,7 +79,7 @@ export function HabitActionsSheet({
         <div role="alertdialog" aria-label="Confirmar borrado">
           <div className="rounded-2xl border border-[#5A2A32] bg-[#2A1519] p-4 flex gap-3">
             <TriangleAlert size={20} className="text-[#F2A7A7] shrink-0 mt-0.5" />
-            <div className="text-[14px] text-[#F2D0D0]">
+            <div className="text-[0.875rem] text-[#F2D0D0]">
               <p className="font-semibold">Esto no se puede deshacer.</p>
               <p className="mt-1">
                 Se borrará "{name}" y {records === 1 ? `su ${recordWord.slice(0, -1)}` : `sus ${records ?? 0} ${recordWord}`}.
@@ -112,8 +112,8 @@ function Action({
     <button onClick={onClick} className="w-full flex items-center gap-3 px-4 min-h-[56px] py-2 text-left active:bg-card transition">
       <span className={danger ? 'text-[#F2A7A7]' : 'text-violet-text'}>{icon}</span>
       <span className="flex-1">
-        <span className={`block text-[15px] ${danger ? 'text-[#F2A7A7]' : ''}`}>{label}</span>
-        {hint && <span className="block text-[12px] text-muted">{hint}</span>}
+        <span className={`block text-[0.9375rem] ${danger ? 'text-[#F2A7A7]' : ''}`}>{label}</span>
+        {hint && <span className="block text-[0.75rem] text-muted">{hint}</span>}
       </span>
     </button>
   );

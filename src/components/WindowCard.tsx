@@ -24,7 +24,7 @@ export function WindowCard() {
     return (
       <Shell kind={open.kind}>
         <p className="font-semibold">Ventana {windowLabel(open.kind)} {over ? 'terminada' : 'en curso'}</p>
-        <p className="text-[13px] opacity-90">
+        <p className="text-[0.8125rem] opacity-90">
           {over ? '¿La cumpliste? Responde con honestidad: no cumplirla no resta.' : `Hasta las ${formatTime(spec!.end)}. Deja el celular lejos.`}
         </p>
         <div className="grid grid-cols-2 gap-2 mt-3">
@@ -41,7 +41,7 @@ export function WindowCard() {
     const log = windowLogFor(windowLogs, today, active.kind);
     if (log) {
       return (
-        <div className="card2 px-4 py-3 text-[13px] flex items-center gap-3">
+        <div className="card2 px-4 py-3 text-[0.8125rem] flex items-center gap-3">
           {active.kind === 'night' ? <Moon size={17} className="text-night-text" /> : <Sun size={17} className="text-blue-text" />}
           <span>Ventana {windowLabel(active.kind)}: {log.kept ? `cumplida · +${P.windowKept} pts` : 'registrada'}.</span>
         </div>
@@ -52,7 +52,7 @@ export function WindowCard() {
         <p className="font-semibold">
           {active.kind === 'night' ? 'Es tu hora sin celular' : 'Primeros minutos del día sin celular'}
         </p>
-        <p className="text-[13px] opacity-90">
+        <p className="text-[0.8125rem] opacity-90">
           {formatTime(active.start)} – {formatTime(active.end)}.{' '}
           {active.kind === 'night'
             ? 'Déjalo cargando lejos de la cama; mañana lo agradeces.'
@@ -69,7 +69,7 @@ export function WindowCard() {
   const next = nextWindow(settings, now);
   if (!next) return null;
   return (
-    <p className="text-[12px] text-muted px-1 flex items-center gap-1.5">
+    <p className="text-[0.75rem] text-muted px-1 flex items-center gap-1.5">
       {next.kind === 'night' ? <Moon size={13} /> : <Sun size={13} />}
       Próxima ventana sin celular: {formatTime(next.start)} – {formatTime(next.end)}
     </p>

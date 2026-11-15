@@ -6,26 +6,37 @@
   color-scheme: dark;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
 }
 
-/* The document never scrolls: the app shell below fills the screen (incl. safe areas)
-   and only <main> scrolls. This keeps the bottom bar in the same place on every screen. */
+/* The document never scrolls: the app shell below fills the physical screen
+   (incl. safe areas) and only <main> scrolls, so the bottom bar never moves. */
 html, body, #root {
   height: 100%;
-  margin: 0;
-  overflow: hidden;
   background: #0D0D11;
+  margin: 0;
+  overscroll-behavior: none;
+  overflow: hidden;
+}
+html {
+  /* Root size follows iOS "Larger Text" (set from JS, see lib/viewport.ts); 16px by default. */
+  font-size: var(--root-font, 16px);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 body {
   @apply bg-bg text-ink font-sans antialiased;
   -webkit-tap-highlight-color: transparent;
-  overscroll-behavior-y: none;
   font-feature-settings: 'cv11', 'ss01';
+  touch-action: manipulation; /* no double-tap zoom */
+  overflow-wrap: break-word; /* long words/URLs never push the layout wider */
 }
 
 input, textarea, select, button { font: inherit; color: inherit; }
-/* iOS zooms into inputs below 16px */
-input, textarea, select { font-size: 16px; }
+a, button, input, textarea, select, label { touch-action: manipulation; }
+/* iOS zooms into inputs below 16px: never go below it, even with rem text */
+input, textarea, select { font-size: max(16px, 1rem); }
 
 @layer components {
   .card { @apply bg-card border border-line rounded-card; }
@@ -33,12 +44,12 @@ input, textarea, select { font-size: 16px; }
   .pill { @apply inline-flex items-center justify-center gap-1.5 rounded-full px-4 min-h-[44px] text-sm font-medium transition active:scale-[0.97]; }
   .pill-primary { @apply pill bg-violet text-white; }
   .pill-ghost { @apply pill bg-card2 border border-line2 text-ink; }
-  .chip { @apply inline-flex items-center rounded-full px-3 min-h-[36px] text-[13px] font-medium border transition; }
+  .chip { @apply inline-flex items-center rounded-full px-3 min-h-[36px] text-[0.8125rem] font-medium border transition; }
   .chip-on { @apply chip bg-violet-soft border-violet text-violet-text; }
   .chip-off { @apply chip bg-transparent border-line2 text-muted; }
-  .field { @apply w-full bg-card2 border border-line2 rounded-xl px-3.5 py-3 text-ink placeholder:text-dim outline-none focus:border-violet; }
-  .label { @apply block text-[13px] text-muted mb-1.5; }
-  .section-title { @apply text-[13px] font-semibold uppercase tracking-wider text-muted; }
+  .field { @apply w-full min-h-[44px] bg-card2 border border-line2 rounded-xl px-3.5 py-3 text-ink placeholder:text-dim outline-none focus:border-violet; }
+  .label { @apply block text-[0.8125rem] text-muted mb-1.5; }
+  .section-title { @apply text-[0.8125rem] font-semibold uppercase tracking-wider text-muted; }
   .icon-btn { @apply inline-flex items-center justify-center w-11 h-11 rounded-full text-muted active:bg-card2 transition; }
 }
 
@@ -46,15 +57,31 @@ input, textarea, select { font-size: 16px; }
 /* <main> ends where the bar starts, so content only needs breathing room */
 .pb-nav { padding-bottom: 28px; }
 
+/*
+ * App shell. In the installed iPhone app (standalone), WebKit reports the viewport height units (vh/dvh)
+ * as the screen height MINUS the top safe area, which left an ~80 px empty strip
+ * under the bar. So there the height comes from the physical screen
+ * (--app-height, set by lib/viewport.ts). In a normal browser tab, the dynamic viewport height with
+ * the -webkit-fill-available fallback.
+ */
 .app-shell {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--app-height, 100%);
   display: flex;
   flex-direction: column;
-  height: 100vh;                      /* old browsers */
-  height: -webkit-fill-available;     /* older iOS Safari */
-  height: 100dvh;                     /* dynamic viewport */
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
   background: #0D0D11;
+}
+@media not all and (display-mode: standalone) {
+  .app-shell {
+    height: 100%;
+    height: -webkit-fill-available;
+    height: 100dvh;
+  }
 }
 .app-main {
   flex: 1 1 auto;
@@ -66,7 +93,24 @@ input, textarea, select { font-size: 16px; }
 }
 .app-nav {
   flex: 0 0 auto;
+  width: 100%;
+  /* the only space under the bar: the home indicator area, same background to the physical edge */
   padding-bottom: env(safe-area-inset-bottom, 0px);
+  margin: 0;
+  background: #0D0D11;
+}
+
+/* Grows the touch area to at least 44x44 px without changing how it looks
+   (chips are 36 px tall visually; their tap area is 44 px). */
+.hit, .chip, .chip-on, .chip-off { position: relative; }
+.hit::after, .chip::after, .chip-on::after, .chip-off::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+  transform: translate(-50%, -50%);
 }
 
 ::-webkit-scrollbar { display: none; }

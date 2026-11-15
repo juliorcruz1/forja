@@ -74,9 +74,9 @@ export function HabitRow({ habit, date, today, idx, settings, heavy, onOpen }: P
           <span className="flex items-center gap-2">
             <HabitIcon name={habit.icon} size={16} className={done ? 'text-violet-text' : 'text-muted'} />
             <span className={`font-medium truncate ${done ? 'text-muted' : ''}`}>{habit.name}</span>
-            {status === 'min' && <span className="text-[11px] px-2 py-0.5 rounded-full bg-blue-soft text-blue-text shrink-0">Mínimo</span>}
+            {status === 'min' && <span className="text-[0.6875rem] px-2 py-0.5 rounded-full bg-blue-soft text-blue-text shrink-0">Mínimo</span>}
           </span>
-          {sub.length > 0 && <span className="text-[12px] text-muted truncate mt-0.5">{sub.join(' · ')}</span>}
+          {sub.length > 0 && <span className="text-[0.75rem] text-muted truncate mt-0.5">{sub.join(' · ')}</span>}
         </button>
         {habit.kind === 'counter' ? (
           <button
@@ -88,7 +88,7 @@ export function HabitRow({ habit, date, today, idx, settings, heavy, onOpen }: P
           </button>
         ) : (
           habit.minVersion && !done && !heavy && status === 'pending' && (
-            <button className="chip-off text-[12px] shrink-0" onClick={() => setStatus(habit.id, date, 'min')} aria-label={`Hice el mínimo de ${habit.name}`}>
+            <button className="chip-off text-[0.75rem] shrink-0" onClick={() => setStatus(habit.id, date, 'min')} aria-label={`Hice el mínimo de ${habit.name}`}>
               Mínimo
             </button>
           )
@@ -100,24 +100,24 @@ export function HabitRow({ habit, date, today, idx, settings, heavy, onOpen }: P
       {habit.kind === 'checklist' && (
         <div className="mt-2 ml-[52px]">
           {items.length === 0 ? (
-            <Link to={`/habitos/${habit.id}/editar`} className="text-[12px] text-blue-text min-h-[32px] inline-flex items-center">
+            <Link to={`/habitos/${habit.id}/editar`} className="hit text-[0.75rem] text-blue-text min-h-[32px] inline-flex items-center">
               Agrega tu lista aquí
             </Link>
           ) : (
             <>
               <div className="flex items-center justify-between mb-1">
-                <span className="text-[12px] text-muted">
+                <span className="text-[0.75rem] text-muted">
                   {checkedCount} de {items.length} marcados
                 </span>
                 {checkedCount < items.length ? (
                   <button
-                    className="text-[13px] font-medium text-violet-text min-h-[36px] px-2 -mr-2"
+                    className="text-[0.8125rem] font-medium text-violet-text min-h-[36px] px-2 -mr-2"
                     onClick={() => setChecklistAll(habit, date, true)}
                   >
                     Marcar todos
                   </button>
                 ) : (
-                  <button className="text-[13px] text-muted min-h-[36px] px-2 -mr-2" onClick={() => setChecklistAll(habit, date, false)}>
+                  <button className="text-[0.8125rem] text-muted min-h-[36px] px-2 -mr-2" onClick={() => setChecklistAll(habit, date, false)}>
                     Desmarcar
                   </button>
                 )}
@@ -143,11 +143,11 @@ export function HabitRow({ habit, date, today, idx, settings, heavy, onOpen }: P
                           {on && <Check size={13} strokeWidth={3} className="text-white" />}
                         </span>
                         <span className="flex-1 min-w-0">
-                          <span className={`block text-[14px] truncate ${on ? 'text-violet-text' : ''}`}>{it.name}</span>
-                          {detail && <span className="block text-[12px] text-muted truncate">{detail}</span>}
+                          <span className={`block text-[0.875rem] truncate ${on ? 'text-violet-text' : ''}`}>{it.name}</span>
+                          {detail && <span className="block text-[0.75rem] text-muted truncate">{detail}</span>}
                         </span>
-                        {it.essential && <span className="text-[11px] text-blue-text shrink-0">Esencial</span>}
-                        {!it.required && !it.essential && <span className="text-[11px] text-dim shrink-0">Opcional</span>}
+                        {it.essential && <span className="text-[0.6875rem] text-blue-text shrink-0">Esencial</span>}
+                        {!it.required && !it.essential && <span className="text-[0.6875rem] text-dim shrink-0">Opcional</span>}
                       </button>
                     </li>
                   );

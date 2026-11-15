@@ -79,6 +79,7 @@ describe('focus sessions (time from start and end timestamps)', () => {
     const f = await startFocus('Clips', 25, at(10, 0));
     expect(f).toMatchObject({ date: '2026-11-17', status: 'running', plannedMin: 25 });
     expect(remainingMs(f, at(10, 10))).toBe(15 * 60000);
+    expect(remainingMs(f, new Date(at(10, 0).getTime() - 500))).toBe(25 * 60000); // never 25:01
     expect(formatClock(remainingMs(f, at(10, 10)))).toBe('15:00');
     // app closed and reopened after the end: still exactly 25 min, never more
     expect(remainingMs(f, at(13, 0))).toBe(0);
@@ -120,6 +121,8 @@ describe('Momento de ganas', () => {
     expect(u).toMatchObject({ date: '2026-11-17', hour: 22 });
     expect(urgeSecondsLeft(u, 120, new Date(2026, 10, 17, 22, 15, 30))).toBe(90);
     expect(urgeSecondsLeft(u, 120, new Date(2026, 10, 17, 22, 20))).toBe(0);
+    // clock read slightly before the start (regression: showed 2:01)
+    expect(urgeSecondsLeft(u, 120, new Date(2026, 10, 17, 22, 14, 59, 500))).toBe(120);
     await updateUrge(u.id, { situation: 'Antes de dormir', feeling: 'Cansado' });
     expect(await db.urges.get(u.id)).toMatchObject({ situation: 'Antes de dormir', feeling: 'Cansado' });
   });

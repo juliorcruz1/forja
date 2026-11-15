@@ -43,27 +43,27 @@ export function WeeklyReviewScreen() {
       }
     >
       <Card>
-        <div className="grid grid-cols-3 gap-2 text-center">
+        <div className="grid gap-2 text-center grid-cols-[repeat(auto-fit,minmax(6rem,1fr))]">
           <div>
             <p className="text-3xl font-bold">{s.overall.pct === null ? '—' : `${s.overall.pct}%`}</p>
-            <p className="text-[11px] text-muted">Cumplimiento</p>
+            <p className="text-[0.6875rem] text-muted">Cumplimiento</p>
           </div>
           <div>
             <p className="text-3xl font-bold">{s.extras.reduce((a, e) => a + e.days, 0) + s.oneOffDone}</p>
-            <p className="text-[11px] text-muted">Extras</p>
+            <p className="text-[0.6875rem] text-muted">Extras</p>
           </div>
           <div>
             <p className="text-3xl font-bold">{relapseTotal}</p>
-            <p className="text-[11px] text-muted">Recaídas</p>
+            <p className="text-[0.6875rem] text-muted">Recaídas</p>
           </div>
         </div>
         {weekly.map((h) => {
           const g = weeklyGoal(h, idx, today, ws);
           return (
-            <p key={h.id} className="mt-4 pt-3 border-t border-line text-[14px] flex items-center gap-2">
+            <p key={h.id} className="mt-4 pt-3 border-t border-line text-[0.875rem] flex items-center gap-2">
               <HabitIcon name={h.icon} size={16} className="text-violet-text" />
               {h.name}: <b>{g.count} de {g.target}</b>
-              <span className="text-muted text-[12px]">{g.state === 'met' ? '· meta cumplida' : ''}</span>
+              <span className="text-muted text-[0.75rem]">{g.state === 'met' ? '· meta cumplida' : ''}</span>
             </p>
           );
         })}
@@ -72,16 +72,16 @@ export function WeeklyReviewScreen() {
       {(best.length > 0 || worst.length > 0) && (
         <div className="grid grid-cols-2 gap-3.5">
           <Card>
-            <p className="text-[12px] text-muted mb-2">Mejores</p>
+            <p className="text-[0.75rem] text-muted mb-2">Mejores</p>
             {best.map((h) => (
-              <p key={h.habit.id} className="text-[14px] truncate">{h.habit.name} <span className="text-violet-text">{h.tally.pct}%</span></p>
+              <p key={h.habit.id} className="text-[0.875rem] truncate">{h.habit.name} <span className="text-violet-text">{h.tally.pct}%</span></p>
             ))}
           </Card>
           <Card>
-            <p className="text-[12px] text-muted mb-2">A mejorar</p>
+            <p className="text-[0.75rem] text-muted mb-2">A mejorar</p>
             {worst.length ? worst.map((h) => (
-              <p key={h.habit.id} className="text-[14px] truncate">{h.habit.name} <span className="text-blue-text">{h.tally.pct}%</span></p>
-            )) : <p className="text-[13px] text-dim">—</p>}
+              <p key={h.habit.id} className="text-[0.875rem] truncate">{h.habit.name} <span className="text-blue-text">{h.tally.pct}%</span></p>
+            )) : <p className="text-[0.8125rem] text-dim">—</p>}
           </Card>
         </div>
       )}
@@ -113,7 +113,7 @@ function Answers({ ws, initial }: { ws: DateKey; initial: string[] }) {
     <>
       {WEEKLY_REVIEW_QUESTIONS.map((q, i) => (
         <Card key={q}>
-          <label className="text-[15px] font-semibold block mb-2" htmlFor={`q${i}`}>{q}</label>
+          <label className="text-[0.9375rem] font-semibold block mb-2" htmlFor={`q${i}`}>{q}</label>
           <textarea
             id={`q${i}`}
             rows={3}
@@ -132,7 +132,7 @@ function Answers({ ws, initial }: { ws: DateKey; initial: string[] }) {
           />
         </Card>
       ))}
-      <p className={`text-[12px] text-muted flex items-center gap-1 justify-center transition ${saved ? 'opacity-100' : 'opacity-0'}`}>
+      <p className={`text-[0.75rem] text-muted flex items-center gap-1 justify-center transition ${saved ? 'opacity-100' : 'opacity-0'}`}>
         <Check size={13} /> Guardado
       </p>
     </>

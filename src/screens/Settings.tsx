@@ -12,10 +12,11 @@ import { nightInfo } from '../domain/sleep';
 import { useData } from '../hooks/useData';
 import { PhoneSettings, PointsSettings } from '../components/SettingsStage2';
 import { NameSetting, RemindersSection } from '../components/Reminders';
+import { DeviceInfo } from '../components/DeviceInfo';
 import { addDays, formatTime, WEEKDAY_NAMES, weekStart } from '../lib/dates';
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
-const TIME = 'field w-[150px] py-2 text-center';
+const TIME = 'field w-[9.5rem] py-2 text-center';
 
 export function SettingsScreen() {
   const data = useData();
@@ -42,31 +43,31 @@ export function SettingsScreen() {
       <Link to="/habitos" className="card p-4 flex items-center justify-between active:scale-[0.99] transition">
         <div>
           <p className="font-semibold">Hábitos</p>
-          <p className="text-[13px] text-muted">Crear, editar, pausar o archivar</p>
+          <p className="text-[0.8125rem] text-muted">Crear, editar, pausar o archivar</p>
         </div>
         <ChevronRight size={18} className="text-dim" />
       </Link>
 
       <Card>
         <p className="font-semibold mb-1">Horario laboral</p>
-        <p className="text-[12px] text-muted mb-3">Se usa para detectar noches críticas.</p>
+        <p className="text-[0.75rem] text-muted mb-3">Se usa para detectar noches críticas.</p>
         <div className="divide-y divide-line">
           {settings.work.map((d, i) => (
             <div key={i} className="py-2.5">
               <div className="flex items-center justify-between">
-                <span className="text-[15px]">{cap(WEEKDAY_NAMES[i])}</span>
+                <span className="text-[0.9375rem]">{cap(WEEKDAY_NAMES[i])}</span>
                 <div className="flex items-center gap-2">
-                  <span className="text-[12px] text-muted">{d.off ? 'Descanso' : 'Trabajo'}</span>
+                  <span className="text-[0.75rem] text-muted">{d.off ? 'Descanso' : 'Trabajo'}</span>
                   <Toggle checked={!d.off} onChange={(v) => setWork(i, { off: !v })} label={`Trabajo el ${WEEKDAY_NAMES[i]}`} />
                 </div>
               </div>
               {!d.off && (
                 <div className="grid grid-cols-2 gap-2 mt-1.5">
-                  <label className="text-[12px] text-muted">
+                  <label className="text-[0.75rem] text-muted">
                     Entrada
                     <input type="time" className="field mt-1 py-2" value={d.start} onChange={(e) => e.target.value && setWork(i, { start: e.target.value })} />
                   </label>
-                  <label className="text-[12px] text-muted">
+                  <label className="text-[0.75rem] text-muted">
                     Salida
                     <input type="time" className="field mt-1 py-2" value={d.end} onChange={(e) => e.target.value && setWork(i, { end: e.target.value })} />
                   </label>
@@ -79,11 +80,11 @@ export function SettingsScreen() {
 
       <Card>
         <p className="font-semibold mb-1">Sueño</p>
-        <p className="text-[12px] text-muted mb-3">Hora habitual de acostarte cada noche.</p>
+        <p className="text-[0.75rem] text-muted mb-3">Hora habitual de acostarte cada noche.</p>
         <div className="divide-y divide-line">
           {settings.bedtime.map((b, i) => (
             <label key={i} className="flex items-center justify-between py-2 gap-3">
-              <span className="text-[15px]">Noche del {WEEKDAY_NAMES[i]}</span>
+              <span className="text-[0.9375rem]">Noche del {WEEKDAY_NAMES[i]}</span>
               <input type="time" className={TIME} value={b} onChange={(e) => e.target.value && setBed(i, e.target.value)} />
             </label>
           ))}
@@ -91,19 +92,19 @@ export function SettingsScreen() {
         <div className="mt-4 pt-3 border-t border-line space-y-3">
           <label className="flex items-center justify-between gap-3">
             <span>
-              <span className="text-[15px] block">Hora en noches críticas</span>
-              <span className="text-[12px] text-muted">Cuando al día siguiente entras temprano</span>
+              <span className="text-[0.9375rem] block">Hora en noches críticas</span>
+              <span className="text-[0.75rem] text-muted">Cuando al día siguiente entras temprano</span>
             </span>
             <input type="time" className={TIME} value={settings.criticalBedtime} onChange={(e) => e.target.value && updateSettings({ criticalBedtime: e.target.value })} />
           </label>
           <label className="flex items-center justify-between gap-3">
             <span>
-              <span className="text-[15px] block">"Temprano" es antes de</span>
-              <span className="text-[12px] text-muted">Hora de entrada que activa la noche crítica</span>
+              <span className="text-[0.9375rem] block">"Temprano" es antes de</span>
+              <span className="text-[0.75rem] text-muted">Hora de entrada que activa la noche crítica</span>
             </span>
             <input type="time" className={TIME} value={settings.earlyStartThreshold} onChange={(e) => e.target.value && updateSettings({ earlyStartThreshold: e.target.value })} />
           </label>
-          <p className="text-[12px] text-night-text bg-night-bg border border-night-line rounded-xl px-3 py-2">
+          <p className="text-[0.75rem] text-night-text bg-night-bg border border-night-line rounded-xl px-3 py-2">
             {criticalNights.length
               ? `Noches críticas: ${criticalNights.join(' y ')} (acostarte a las ${formatTime(settings.criticalBedtime)}).`
               : 'Con tu horario actual no hay noches críticas.'}
@@ -113,8 +114,8 @@ export function SettingsScreen() {
 
       <Card>
         <div className="flex items-center justify-between">
-          <p className="text-[15px]">La semana empieza en</p>
-          <span className="text-[15px] text-muted">Lunes</span>
+          <p className="text-[0.9375rem]">La semana empieza en</p>
+          <span className="text-[0.9375rem] text-muted">Lunes</span>
         </div>
       </Card>
 
@@ -130,10 +131,12 @@ export function SettingsScreen() {
 
       <Card>
         <p className="font-semibold mb-2">Marca</p>
-        <p className="text-[15px] tracking-[0.15em] font-bold">{BRAND.name}</p>
-        <p className="text-[13px] text-muted">{BRAND.motto}</p>
-        <p className="text-[11px] text-dim mt-2">El nombre y el lema se cambian en src/config/brand.ts.</p>
+        <p className="text-[0.9375rem] tracking-[0.15em] font-bold">{BRAND.name}</p>
+        <p className="text-[0.8125rem] text-muted">{BRAND.motto}</p>
+        <p className="text-[0.6875rem] text-dim mt-2">El nombre y el lema se cambian en src/config/brand.ts.</p>
       </Card>
+
+      <DeviceInfo />
     </Screen>
   );
 }
@@ -204,10 +207,10 @@ function BackupCard({ lastBackupAt }: { lastBackupAt?: string }) {
   return (
     <Card>
       <p className="font-semibold mb-1">Respaldo</p>
-      <p className="text-[13px] text-muted">
+      <p className="text-[0.8125rem] text-muted">
         Tus datos viven solo en este dispositivo. Exporta un respaldo cada semana y guárdalo en Archivos o iCloud Drive.
       </p>
-      <p className={`text-[13px] mt-2 ${due ? 'text-blue-text' : 'text-muted'}`}>
+      <p className={`text-[0.8125rem] mt-2 ${due ? 'text-blue-text' : 'text-muted'}`}>
         Último respaldo:{' '}
         {lastBackupAt ? new Date(lastBackupAt).toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' }) : 'nunca'}
         {due ? ` · ${BRAND.backupReminder}` : ''}
@@ -221,7 +224,7 @@ function BackupCard({ lastBackupAt }: { lastBackupAt?: string }) {
         </button>
       </div>
       <input ref={fileRef} type="file" accept="application/json,.json" className="hidden" onChange={(e) => onFile(e.target.files?.[0])} />
-      {msg && <p className={`text-[13px] mt-3 ${msg.kind === 'ok' ? 'text-violet-text' : 'text-[#F2A7A7]'}`}>{msg.text}</p>}
+      {msg && <p className={`text-[0.8125rem] mt-3 ${msg.kind === 'ok' ? 'text-violet-text' : 'text-[#F2A7A7]'}`}>{msg.text}</p>}
 
       <Sheet open={!!pending} onClose={() => setPending(null)} title="¿Importar respaldo?">
         {summary && (
@@ -229,7 +232,7 @@ function BackupCard({ lastBackupAt }: { lastBackupAt?: string }) {
             <p className="text-sm text-muted mb-3">
               Esto <b className="text-ink">reemplazará todos los datos actuales</b> de este dispositivo por los del respaldo. Si no estás seguro, exporta primero un respaldo de lo que tienes ahora.
             </p>
-            <div className="card2 p-3 text-[13px] space-y-1 mb-4">
+            <div className="card2 p-3 text-[0.8125rem] space-y-1 mb-4">
               <p>Creado: {summary.exportedAt ? new Date(summary.exportedAt).toLocaleString('es-MX') : 'desconocido'}</p>
               <p>{summary.habits} hábitos · {summary.logs} registros</p>
               <p>{summary.journal} entradas de diario · {summary.badHabits} hábitos malos</p>

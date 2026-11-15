@@ -53,7 +53,7 @@ export function JournalScreen() {
       subtitle={formatLong(date)}
       back={date !== today ? '/diario' : undefined}
       right={
-        <Link to="/diario/historial" className="pill-ghost text-[13px] min-h-[40px] px-3.5">
+        <Link to="/diario/historial" className="pill-ghost text-[0.8125rem] px-3.5">
           <History size={16} /> Historial
         </Link>
       }
@@ -119,8 +119,8 @@ function Editor({ date, initial }: { date: DateKey; initial: JournalEntry | unde
     <>
       <Card>
         <div className="flex items-center justify-between mb-3">
-          <p className="text-[15px] font-semibold">¿Cómo estuvo el día?</p>
-          <span className={`text-[12px] text-muted flex items-center gap-1 transition ${saved ? 'opacity-100' : 'opacity-0'}`}>
+          <p className="text-[0.9375rem] font-semibold">¿Cómo estuvo el día?</p>
+          <span className={`text-[0.75rem] text-muted flex items-center gap-1 transition ${saved ? 'opacity-100' : 'opacity-0'}`}>
             <Check size={13} /> Guardado
           </span>
         </div>
@@ -143,13 +143,13 @@ function Editor({ date, initial }: { date: DateKey; initial: JournalEntry | unde
       </Card>
       {FIELDS.map((f) => (
         <Card key={f.key}>
-          <label className="text-[15px] font-semibold block mb-2" htmlFor={`j-${f.key}`}>
+          <label className="text-[0.9375rem] font-semibold block mb-2" htmlFor={`j-${f.key}`}>
             {f.title}
           </label>
           {f.rows === 1 ? (
             <input
               id={`j-${f.key}`}
-              className="w-full bg-transparent outline-none placeholder:text-dim text-ink"
+              className="w-full min-h-[44px] bg-transparent outline-none placeholder:text-dim text-ink"
               value={draft[f.key]}
               placeholder={f.placeholder}
               maxLength={140}
@@ -178,10 +178,10 @@ function EntryRow({ e }: { e: JournalEntry }) {
     <Link to={`/diario/${e.date}`} className="card p-3.5 flex items-center gap-3 active:scale-[0.99] transition">
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <p className="text-[14px] font-medium">{formatLong(e.date)}</p>
-          {e.mood && <span className="text-[11px] px-2 py-0.5 rounded-full bg-violet-soft text-violet-text">{MOODS[e.mood - 1].label}</span>}
+          <p className="text-[0.875rem] font-medium">{formatLong(e.date)}</p>
+          {e.mood && <span className="text-[0.6875rem] px-2 py-0.5 rounded-full bg-violet-soft text-violet-text">{MOODS[e.mood - 1].label}</span>}
         </div>
-        <p className="text-[13px] text-muted truncate mt-0.5">{e.line || e.reflection || e.notes || 'Sin línea del día'}</p>
+        <p className="text-[0.8125rem] text-muted truncate mt-0.5">{e.line || e.reflection || e.notes || 'Sin línea del día'}</p>
       </div>
       <ChevronRight size={18} className="text-dim shrink-0" />
     </Link>
@@ -223,7 +223,7 @@ export function JournalHistoryScreen() {
       {list.length === 0 && <Empty>No hay entradas todavía.</Empty>}
       {[...groups.entries()].map(([k, entries]) => (
         <div key={k} className="space-y-2">
-          <SectionHeader title={formatMonth(`${k}-01`)} right={<span className="text-[12px] text-dim">{entries.length}</span>} />
+          <SectionHeader title={formatMonth(`${k}-01`)} right={<span className="text-[0.75rem] text-dim">{entries.length}</span>} />
           {entries.map((e) => (
             <EntryRow key={e.id} e={e} />
           ))}

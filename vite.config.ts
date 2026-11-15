@@ -2,12 +2,21 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
+import pkg from './package.json';
+
+// Shown in Ajustes ("Versión x.y.z"). In GitHub Actions the commit is included too.
+const env = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env ?? {};
+const BUILD = (env.GITHUB_SHA ?? 'local').slice(0, 7);
 
 // GitHub Pages serves the app from https://<user>.github.io/forja/
 const BASE = '/forja/';
 
 export default defineConfig({
   base: BASE,
+  define: {
+    __APP_VERSION__: JSON.stringify(pkg.version),
+    __APP_BUILD__: JSON.stringify(`${BUILD} · ${new Date().toISOString().slice(0, 10)}`),
+  },
   plugins: [
     react(),
     VitePWA({
@@ -37,6 +46,10 @@ export default defineConfig({
         // Spanish only needs the latin subsets of Inter
         globIgnores: ['**/inter-{cyrillic,cyrillic-ext,greek,greek-ext,vietnamese}-*'],
         navigateFallback: `${BASE}index.html`,
+        // New version takes over immediately instead of waiting for every tab to close
+        skipWaiting: true,
+        clientsClaim: true,
+        cleanupOutdatedCaches: true,
       },
     }),
   ],

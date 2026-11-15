@@ -66,12 +66,12 @@ export function DayStatusSheet({
               <span className="flex-1 min-w-0">
                 <span className="text-sm block">{it.name}</span>
                 {(it.note || it.timeOfDay) && (
-                  <span className="text-[12px] text-muted block truncate">
+                  <span className="text-[0.75rem] text-muted block truncate">
                     {[it.note, timeLabel(it.timeOfDay)].filter(Boolean).join(' · ')}
                   </span>
                 )}
               </span>
-              {it.essential && <span className="text-[11px] text-blue-text">Esencial</span>}
+              {it.essential && <span className="text-[0.6875rem] text-blue-text">Esencial</span>}
             </label>
           ))}
           <div className="flex gap-2 p-2">
@@ -90,11 +90,11 @@ export function DayStatusSheet({
               status === o.value ? 'border-violet bg-violet-soft' : 'border-line2 bg-card2'
             }`}
           >
-            <div className="text-[15px] font-medium">
+            <div className="text-[0.9375rem] font-medium">
               {o.label}
               {o.value === 'min' && habit.minVersion ? <span className="text-muted font-normal"> · {habit.minVersion}</span> : null}
             </div>
-            <div className="text-[12px] text-muted">{o.hint}</div>
+            <div className="text-[0.75rem] text-muted">{o.hint}</div>
           </button>
         ))}
       </div>

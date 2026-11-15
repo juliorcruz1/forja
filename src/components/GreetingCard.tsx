@@ -27,8 +27,8 @@ export function GreetingCard() {
   });
   return (
     <div className="px-1 -mt-1">
-      <p className="text-[22px] font-semibold leading-tight">{greeting(now, settings.userName)}</p>
-      <p className="text-[14px] text-muted mt-1">{line}</p>
+      <p className="text-[1.375rem] font-semibold leading-tight">{greeting(now, settings.userName)}</p>
+      <p className="text-[0.875rem] text-muted mt-1">{line}</p>
     </div>
   );
 }

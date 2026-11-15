@@ -14,7 +14,7 @@ import { hourLabel, urgePatterns } from '../domain/urges';
 import { WEEKDAY_NAMES } from '../lib/dates';
 import type { BadHabit } from '../db/types';
 import { LevelBar } from '../components/PointsBits';
-import { MONTH_NAMES, minKey, WEEKDAY_LETTER, weekday } from '../lib/dates';
+import { MONTH_NAMES, minKey, range as rangeDays, WEEKDAY_LETTER, weekday } from '../lib/dates';
 import { addDays, addMonths, monthStart, weekStart } from '../lib/dates';
 
 const PREV_LABEL: Record<PeriodKind, string> = { week: 'la semana anterior', month: 'el mes anterior', year: 'el año anterior' };
@@ -57,16 +57,16 @@ export function StatsScreen() {
       </div>
 
       <Card>
-        <p className="text-[13px] text-muted">Cumplimiento</p>
+        <p className="text-[0.8125rem] text-muted">Cumplimiento</p>
         <div className="flex items-end gap-3 mt-1">
-          <p className="text-[48px] leading-none font-bold tracking-tight">{s.overall.pct === null ? '—' : `${s.overall.pct}%`}</p>
+          <p className="text-[3rem] leading-none font-bold tracking-tight">{s.overall.pct === null ? '—' : `${s.overall.pct}%`}</p>
         </div>
-        <p className={`text-[13px] mt-2 ${delta !== null && delta >= 0 ? 'text-violet-text' : 'text-muted'}`}>
+        <p className={`text-[0.8125rem] mt-2 ${delta !== null && delta >= 0 ? 'text-violet-text' : 'text-muted'}`}>
           {delta !== null
             ? `${delta >= 0 ? '+' : ''}${delta} pts vs ${PREV_LABEL[kind]} (${s.previous.pct}%)`
             : `Sin registros en ${PREV_LABEL[kind]} para comparar`}
         </p>
-        <p className="text-[12px] text-dim mt-1">
+        <p className="text-[0.75rem] text-dim mt-1">
           {s.overall.done} de {s.overall.slots} cumplidos{extrasTotal > 0 ? ` · +${extrasTotal} extras` : ''}
         </p>
         <BarChart buckets={s.buckets} />
@@ -76,12 +76,12 @@ export function StatsScreen() {
         <Card>
           <Flame size={18} className="text-violet-text" />
           <p className="text-3xl font-bold mt-2">{cur}</p>
-          <p className="text-[12px] text-muted">Racha actual (días)</p>
+          <p className="text-[0.75rem] text-muted">Racha actual (días)</p>
         </Card>
         <Card>
           <Trophy size={18} className="text-blue-text" />
           <p className="text-3xl font-bold mt-2">{best}</p>
-          <p className="text-[12px] text-muted">Mejor racha (días)</p>
+          <p className="text-[0.75rem] text-muted">Mejor racha (días)</p>
         </Card>
       </div>
 
@@ -93,7 +93,7 @@ export function StatsScreen() {
         <Lightbulb size={20} className="text-night-text shrink-0 mt-0.5" />
         <div>
           <p className="font-semibold text-night-text">Observación</p>
-          <p className="text-[14px] text-night-text/90 mt-0.5">
+          <p className="text-[0.875rem] text-night-text/90 mt-0.5">
             {obs ?? 'Todavía no hay registros en este periodo. Marca tus hábitos y aquí aparecerá un análisis de tus datos.'}
           </p>
         </div>
@@ -107,15 +107,15 @@ export function StatsScreen() {
           <div className="space-y-3.5">
             {[...s.perHabit].sort((a, b) => (b.tally.pct ?? -1) - (a.tally.pct ?? -1)).map(({ habit, tally }) => (
               <div key={habit.id}>
-                <div className="flex items-center justify-between text-[14px] mb-1.5">
+                <div className="flex items-center justify-between text-[0.875rem] mb-1.5">
                   <span className="flex items-center gap-2 min-w-0">
                     <HabitIcon name={habit.icon} size={15} className="text-muted" />
                     <span className="truncate">{habit.name}</span>
-                    {habit.lifecycle === 'archived' && <span className="text-[11px] text-dim shrink-0">Archivado</span>}
+                    {habit.lifecycle === 'archived' && <span className="text-[0.6875rem] text-dim shrink-0">Archivado</span>}
                   </span>
                   <span className="text-muted shrink-0">
                     {tally.pct === null ? '—' : `${tally.pct}%`}
-                    <span className="text-dim text-[12px]"> · {tally.done}/{tally.slots}</span>
+                    <span className="text-dim text-[0.75rem]"> · {tally.done}/{tally.slots}</span>
                   </span>
                 </div>
                 <Bar pct={tally.pct ?? 0} />
@@ -126,13 +126,13 @@ export function StatsScreen() {
         {(s.extras.length > 0 || s.oneOffDone > 0) && (
           <div className="mt-4 pt-3 border-t border-line space-y-1.5">
             {s.extras.map((e) => (
-              <div key={e.habit.id} className="flex items-center justify-between text-[13px]">
+              <div key={e.habit.id} className="flex items-center justify-between text-[0.8125rem]">
                 <span className="text-blue-text">{e.habit.name} (extra)</span>
                 <span className="text-muted">{e.days} {e.days === 1 ? 'día' : 'días'}</span>
               </div>
             ))}
             {s.oneOffDone > 0 && (
-              <div className="flex items-center justify-between text-[13px]">
+              <div className="flex items-center justify-between text-[0.8125rem]">
                 <span className="text-blue-text">Solo para hoy (extra)</span>
                 <span className="text-muted">{s.oneOffDone} {s.oneOffDone === 1 ? 'hecho' : 'hechos'}</span>
               </div>
@@ -144,7 +144,7 @@ export function StatsScreen() {
       {activeBad.length === 0 && (
         <Card>
           <p className="font-semibold mb-1">Hábitos malos</p>
-          <p className="text-[13px] text-muted">
+          <p className="text-[0.8125rem] text-muted">
             Aquí verás días sin caer, mejor marca y recaídas por semana y mes.{' '}
             <Link to="/malos/nuevo" className="text-violet-text">Agregar uno</Link>
           </p>
@@ -161,10 +161,10 @@ export function StatsScreen() {
               const ms = monthStart(today);
               return (
                 <div key={b.id} className="card2 p-3">
-                  <p className="text-[14px] font-medium flex items-center gap-2">
+                  <p className="text-[0.875rem] font-medium flex items-center gap-2">
                     <HabitIcon name={b.icon} size={15} className="text-muted" /> {b.name}
                     {b.lifecycle !== 'active' && (
-                      <span className="text-[11px] text-dim">{b.lifecycle === 'archived' ? 'Archivado' : 'En pausa'}</span>
+                      <span className="text-[0.6875rem] text-dim">{b.lifecycle === 'archived' ? 'Archivado' : 'En pausa'}</span>
                     )}
                   </p>
                   <div className="grid grid-cols-4 gap-2 mt-2 text-center">
@@ -173,7 +173,7 @@ export function StatsScreen() {
                     <MiniStat label="Rec. semana" value={relapsesInRange(b, relapses, ws, addDays(ws, 6))} />
                     <MiniStat label="Rec. mes" value={relapsesInRange(b, relapses, ms, addDays(addMonths(ms, 1), -1))} />
                   </div>
-                  <p className="text-[11px] text-dim mt-2">En este periodo: {relapsesInRange(b, relapses, period.from, period.to)} recaídas</p>
+                  <p className="text-[0.6875rem] text-dim mt-2">En este periodo: {relapsesInRange(b, relapses, period.from, period.to)} recaídas</p>
                 </div>
               );
             })}
@@ -189,7 +189,7 @@ function MiniStat({ label, value }: { label: string; value: number | string }) {
   return (
     <div>
       <p className="text-lg font-bold">{value}</p>
-      <p className="text-[10px] text-muted leading-tight">{label}</p>
+      <p className="text-[0.625rem] text-muted leading-tight">{label}</p>
     </div>
   );
 }
@@ -206,7 +206,7 @@ function BarChart({ buckets }: { buckets: { label: string; pct: number | null; f
               title={b.pct === null ? 'sin datos' : `${b.pct}%`}
             />
           </div>
-          <span className="text-[10px] text-dim">{b.label}</span>
+          <span className="text-[0.625rem] text-dim">{b.label}</span>
         </div>
       ))}
     </div>
@@ -218,6 +218,7 @@ function PointsCard({ period }: { period: Period }) {
   const { points, today, settings } = useData()!;
   const to = minKey(period.to, today);
   const sum = summarize(points, period.from, to);
+  const netByDate = new Map(sum.perDay.map((d) => [d.date, d.net]));
   const bars =
     period.kind === 'year'
       ? MONTH_NAMES.map((m, i) => {
@@ -225,10 +226,11 @@ function PointsCard({ period }: { period: Period }) {
           const end = addDays(addMonths(from, 1), -1);
           return { key: m, label: m.slice(0, 1).toUpperCase(), net: sum.perDay.filter((d) => d.date >= from && d.date <= end).reduce((a, d) => a + d.net, 0) };
         })
-      : sum.perDay.map((d) => ({
-          key: d.date,
-          label: period.kind === 'week' ? WEEKDAY_LETTER[weekday(d.date)] : Number(d.date.slice(8)) % 5 === 1 ? String(Number(d.date.slice(8))) : '',
-          net: d.net,
+      : rangeDays(period.from, period.to).map((date) => ({
+          key: date,
+          label: period.kind === 'week' ? WEEKDAY_LETTER[weekday(date)] : Number(date.slice(8)) % 5 === 1 ? String(Number(date.slice(8))) : '',
+          // days before the points start or still to come stay empty
+          net: netByDate.get(date) ?? 0,
         }));
   const maxAbs = Math.max(1, ...bars.map((b) => Math.abs(b.net)));
   const hasNeg = bars.some((b) => b.net < 0);
@@ -239,15 +241,15 @@ function PointsCard({ period }: { period: Period }) {
     <Card>
       <div className="flex items-baseline justify-between">
         <p className="font-semibold">Puntos</p>
-        <Link to="/puntos" className="text-[13px] text-violet-text min-h-[32px] inline-flex items-center">Detalle</Link>
+        <Link to="/puntos" className="hit text-[0.8125rem] text-violet-text min-h-[32px] inline-flex items-center">Detalle</Link>
       </div>
       {period.to < settings.pointsStartDate ? (
         <p className="text-sm text-muted mt-2">Los puntos cuentan desde el {settings.pointsStartDate}.</p>
       ) : (
         <>
           <div className="flex items-end gap-4 mt-1">
-            <p className="text-[40px] leading-none font-bold tracking-tight">{sum.net >= 0 ? '+' : ''}{formatPts(sum.net)}</p>
-            <p className="text-[13px] text-muted mb-1">+{formatPts(sum.gain)} ganados · −{formatPts(sum.loss)} restados</p>
+            <p className="text-[2.5rem] leading-none font-bold tracking-tight">{sum.net >= 0 ? '+' : ''}{formatPts(sum.net)}</p>
+            <p className="text-[0.8125rem] text-muted mb-1">+{formatPts(sum.gain)} ganados{sum.loss ? ` · −${formatPts(sum.loss)} restados` : ''}</p>
           </div>
           <div className="flex items-stretch gap-[3px] h-[110px] mt-4" role="img" aria-label="Puntos por día">
             {bars.map((b) => (
@@ -262,23 +264,23 @@ function PointsCard({ period }: { period: Period }) {
                     </div>
                   )}
                 </div>
-                <span className="text-[10px] text-dim text-center h-4 mt-1">{b.label}</span>
+                <span className="text-[0.625rem] text-dim text-center h-4 mt-1">{b.label}</span>
               </div>
             ))}
           </div>
           {(gains.length > 0 || losses.length > 0) && (
             <div className="grid grid-cols-1 gap-3 mt-4 pt-3 border-t border-line">
               {gains.length > 0 && (
-                <ul className="space-y-1 text-[13px]">
-                  <li className="text-[12px] font-semibold text-muted">Cómo los ganaste</li>
+                <ul className="space-y-1 text-[0.8125rem]">
+                  <li className="text-[0.75rem] font-semibold text-muted">Cómo los ganaste</li>
                   {gains.map((k) => (
                     <li key={k.kind} className="flex justify-between"><span className="text-muted">{k.label}</span><span className="text-violet-text">+{formatPts(k.pts)}</span></li>
                   ))}
                 </ul>
               )}
               {losses.length > 0 && (
-                <ul className="space-y-1 text-[13px]">
-                  <li className="text-[12px] font-semibold text-muted">Restas</li>
+                <ul className="space-y-1 text-[0.8125rem]">
+                  <li className="text-[0.75rem] font-semibold text-muted">Restas</li>
                   {losses.map((k) => (
                     <li key={k.kind} className="flex justify-between"><span className="text-muted">{k.label}</span><span>−{formatPts(-k.pts)}</span></li>
                   ))}
@@ -317,9 +319,9 @@ function UsageStats({ bad, period }: { bad: BadHabit; period: Period }) {
   const max = Math.max(limit * 1.5, ...bars.map((b) => b.v ?? 0));
   return (
     <div className="card2 p-3">
-      <p className="text-[14px] font-medium flex items-center gap-2">
+      <p className="text-[0.875rem] font-medium flex items-center gap-2">
         <HabitIcon name={bad.icon} size={15} className="text-muted" /> {bad.name}
-        <span className="text-[11px] text-dim">límite {limit} min</span>
+        <span className="text-[0.6875rem] text-dim">límite {limit} min</span>
       </p>
       <div className="grid grid-cols-3 gap-2 mt-2 text-center">
         <MiniStat label="Promedio (min)" value={t.average ?? 0} />
@@ -339,9 +341,9 @@ function UsageStats({ bad, period }: { bad: BadHabit; period: Period }) {
         ))}
       </div>
       <div className="flex gap-[3px] mt-1">
-        {bars.map((b) => <span key={b.key} className="flex-1 text-center text-[9px] text-dim">{b.label}</span>)}
+        {bars.map((b) => <span key={b.key} className="flex-1 text-center text-[0.5625rem] text-dim">{b.label}</span>)}
       </div>
-      {t.logged === 0 && <p className="text-[11px] text-dim mt-2">Sin minutos anotados en este periodo.</p>}
+      {t.logged === 0 && <p className="text-[0.6875rem] text-dim mt-2">Sin minutos anotados en este periodo.</p>}
     </div>
   );
 }
@@ -357,7 +359,7 @@ function FocusCard({ period }: { period: Period }) {
     <Card>
       <div className="flex items-baseline justify-between">
         <p className="font-semibold">Concentración</p>
-        <Link to="/concentracion" className="text-[13px] text-violet-text min-h-[32px] inline-flex items-center">Abrir</Link>
+        <Link to="/concentracion" className="hit text-[0.8125rem] text-violet-text min-h-[32px] inline-flex items-center">Abrir</Link>
       </div>
       <div className="grid grid-cols-3 gap-2 mt-2 text-center">
         <MiniStat label="Tiempo total" value={formatMinutes(t.minutes)} />
@@ -378,10 +380,10 @@ function UrgesCard({ period }: { period: Period }) {
     <Card>
       <div className="flex items-baseline justify-between">
         <p className="font-semibold">Momentos de ganas</p>
-        <Link to="/ganas" className="text-[13px] text-violet-text min-h-[32px] inline-flex items-center">Abrir</Link>
+        <Link to="/ganas" className="hit text-[0.8125rem] text-violet-text min-h-[32px] inline-flex items-center">Abrir</Link>
       </div>
       {p.total === 0 ? (
-        <p className="text-[13px] text-muted mt-1">
+        <p className="text-[0.8125rem] text-muted mt-1">
           Sin registros en este periodo. Cuando te den ganas, usa el botón del Inicio: aquí verás tus días y horas más difíciles.
         </p>
       ) : (
@@ -392,27 +394,27 @@ function UrgesCard({ period }: { period: Period }) {
             <MiniStat label="Caíste" value={p.fell} />
           </div>
           {p.topWeekday !== undefined && p.topHour !== undefined && (
-            <p className="text-[13px] text-muted mt-3">
+            <p className="text-[0.8125rem] text-muted mt-3">
               Más ganas los <span className="text-ink">{WEEKDAY_NAMES[p.topWeekday]}</span> y alrededor de las{' '}
               <span className="text-ink">{hourLabel(p.topHour)}</span>.
             </p>
           )}
-          <p className="text-[12px] text-muted mt-3 mb-1">Por día</p>
+          <p className="text-[0.75rem] text-muted mt-3 mb-1">Por día</p>
           <div className="flex items-end gap-1.5 h-[56px]">
             {p.byWeekday.map((n, i) => (
               <div key={i} className="flex-1 flex flex-col items-center justify-end h-full gap-1">
                 <div className={`w-full rounded-t ${n ? 'bg-blue' : 'bg-line'}`} style={{ height: `${Math.max(6, (n / maxDay) * 100)}%` }} title={`${n}`} />
-                <span className="text-[10px] text-dim">{WEEKDAY_LETTER[i]}</span>
+                <span className="text-[0.625rem] text-dim">{WEEKDAY_LETTER[i]}</span>
               </div>
             ))}
           </div>
-          <p className="text-[12px] text-muted mt-3 mb-1">Por hora</p>
+          <p className="text-[0.75rem] text-muted mt-3 mb-1">Por hora</p>
           <div className="flex items-end gap-[2px] h-[48px]">
             {p.byHour.map((n, h) => (
               <div key={h} className={`flex-1 rounded-t ${n ? 'bg-blue' : 'bg-line'}`} style={{ height: `${Math.max(6, (n / maxHour) * 100)}%` }} title={`${hourLabel(h)}: ${n}`} />
             ))}
           </div>
-          <div className="flex justify-between text-[10px] text-dim mt-1">
+          <div className="flex justify-between text-[0.625rem] text-dim mt-1">
             <span>12 AM</span><span>6 AM</span><span>12 PM</span><span>6 PM</span><span>11 PM</span>
           </div>
         </>

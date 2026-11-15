@@ -8,7 +8,8 @@ export const URGE_FEELINGS = ['Ansioso', 'Cansado', 'Aburrido', 'Triste', 'Tranq
 /** Seconds left of the 2-minute pause, from the moment the urge was opened. */
 export function urgeSecondsLeft(u: Pick<Urge, 'at'>, waitSeconds: number, now: Date = new Date()): number {
   const elapsed = Math.floor((now.getTime() - new Date(u.at).getTime()) / 1000);
-  return Math.max(0, waitSeconds - elapsed);
+  // The clock can be read a moment before the start time: never show more than the wait (no "2:01").
+  return Math.min(waitSeconds, Math.max(0, waitSeconds - elapsed));
 }
 
 export interface UrgePatterns {

@@ -56,7 +56,7 @@ export function UrgeScreen() {
     >
       <div className="max-w-[480px] mx-auto px-4">
         <div className="flex items-center justify-between pt-2">
-          <p className="text-[13px] text-muted font-medium">Momento de ganas</p>
+          <p className="text-[0.8125rem] text-muted font-medium">Momento de ganas</p>
           <button className="icon-btn -mr-2" aria-label="Cerrar" onClick={close}>
             <X size={22} />
           </button>
@@ -64,8 +64,8 @@ export function UrgeScreen() {
 
         {step === 'pause' && (
           <>
-            <h1 className="text-[26px] font-bold leading-tight mt-2">¿Ya hiciste tus hábitos de hoy?</h1>
-            <p className="text-[14px] text-muted mt-1">
+            <h1 className="text-[1.625rem] font-bold leading-tight mt-2">¿Ya hiciste tus hábitos de hoy?</h1>
+            <p className="text-[0.875rem] text-muted mt-1">
               {progress.total === 0
                 ? 'Hoy no tienes hábitos obligatorios.'
                 : progress.missing.length === 0
@@ -74,8 +74,8 @@ export function UrgeScreen() {
             </p>
 
             <div className="flex flex-col items-center my-7">
-              <div className="relative w-[180px] h-[180px]">
-                <svg width="180" height="180" className="-rotate-90">
+              <div className="relative w-[min(11.25rem,48vw)] aspect-square">
+                <svg viewBox="0 0 180 180" width="100%" height="100%" className="-rotate-90">
                   <circle cx="90" cy="90" r="80" stroke="#23232C" strokeWidth="10" fill="none" />
                   <circle
                     cx="90" cy="90" r="80" stroke="#4F8CFF" strokeWidth="10" fill="none" strokeLinecap="round"
@@ -84,13 +84,13 @@ export function UrgeScreen() {
                   />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <p className="text-[44px] font-bold tabular-nums leading-none" aria-label="Segundos restantes">
+                  <p className="text-[2.75rem] font-bold tabular-nums leading-none" aria-label="Segundos restantes">
                     {Math.floor(left / 60)}:{String(left % 60).padStart(2, '0')}
                   </p>
-                  <p className="text-[12px] text-muted mt-1">{left > 0 ? 'Espera un momento' : 'Ya pasó lo peor'}</p>
+                  <p className="text-[0.75rem] text-muted mt-1">{left > 0 ? 'Espera un momento' : 'Ya pasó lo peor'}</p>
                 </div>
               </div>
-              <p className="text-[13px] text-muted text-center mt-4 max-w-[300px]">
+              <p className="text-[0.8125rem] text-muted text-center mt-4 max-w-[300px]">
                 Las ganas suben y bajan como una ola. Respira y haz algo de esta lista mientras tanto.
               </p>
             </div>
@@ -102,7 +102,7 @@ export function UrgeScreen() {
                   key={r}
                   onClick={() => setPicked(picked === r ? null : r)}
                   aria-pressed={picked === r}
-                  className={`rounded-2xl border px-3 min-h-[52px] text-left text-[14px] flex items-center gap-2 transition ${
+                  className={`rounded-2xl border px-3 min-h-[52px] text-left text-[0.875rem] flex items-center gap-2 transition ${
                     picked === r ? 'border-violet bg-violet-soft text-violet-text' : 'border-line2 bg-card'
                   }`}
                 >
@@ -167,13 +167,13 @@ export function UrgeScreen() {
 
         {step === 'fell' && (
           <div className="mt-6">
-            <h1 className="text-[24px] font-bold leading-tight">Pasa. Lo anotamos sin juicio.</h1>
-            <p className="text-[14px] text-muted mt-1">¿En cuál caíste? Tu contador vuelve a 0, pero tu mejor marca se queda.</p>
+            <h1 className="text-[1.5rem] font-bold leading-tight">Pasa. Lo anotamos sin juicio.</h1>
+            <p className="text-[0.875rem] text-muted mt-1">¿En cuál caíste? Tu contador vuelve a 0, pero tu mejor marca se queda.</p>
             <div className="space-y-2 mt-5">
               {fallTargets.map((b) => (
                 <button
                   key={b.id}
-                  className="w-full card p-4 text-left text-[15px] active:scale-[0.99] transition"
+                  className="w-full card p-4 text-left text-[0.9375rem] active:scale-[0.99] transition"
                   onClick={async () => {
                     await resolveUrge(urge.id, 'fell', b.id);
                     setStep('done-fell');
@@ -183,7 +183,7 @@ export function UrgeScreen() {
                 </button>
               ))}
               <button
-                className="w-full card2 p-4 text-left text-[15px] text-muted"
+                className="w-full card2 p-4 text-left text-[0.9375rem] text-muted"
                 onClick={async () => {
                   await resolveUrge(urge.id, 'fell');
                   setStep('done-fell');
@@ -199,14 +199,14 @@ export function UrgeScreen() {
           <div className="mt-10 text-center">
             {step === 'done-resisted' ? (
               <>
-                <p className="text-[48px] font-bold text-violet-text">+{settings.points.resisted}</p>
-                <h1 className="text-[24px] font-bold mt-2">Bien ahí. Las ganas pasaron y tú seguiste.</h1>
-                <p className="text-[14px] text-muted mt-2">Cada vez que resistes, la siguiente es un poco más fácil.</p>
+                <p className="text-[3rem] font-bold text-violet-text">+{settings.points.resisted}</p>
+                <h1 className="text-[1.5rem] font-bold mt-2">Bien ahí. Las ganas pasaron y tú seguiste.</h1>
+                <p className="text-[0.875rem] text-muted mt-2">Cada vez que resistes, la siguiente es un poco más fácil.</p>
               </>
             ) : (
               <>
-                <h1 className="text-[24px] font-bold">{BRAND.comebackTitle}</h1>
-                <p className="text-[14px] text-muted mt-2 max-w-[320px] mx-auto">
+                <h1 className="text-[1.5rem] font-bold">{BRAND.comebackTitle}</h1>
+                <p className="text-[0.875rem] text-muted mt-2 max-w-[320px] mx-auto">
                   Un tropiezo no borra lo que llevas. Mira cuándo te pasó para estar listo la próxima vez, y sigue con lo que toca.
                 </p>
               </>

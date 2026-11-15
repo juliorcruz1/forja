@@ -54,9 +54,9 @@ export function HabitDetailScreen() {
             <HabitIcon name={habit.icon} size={24} />
           </span>
           <div className="min-w-0">
-            {habit.identity && <p className="text-[15px] font-medium">"{habit.identity}"</p>}
-            {habit.stackAfter && <p className="text-[13px] text-muted">Después de {habit.stackAfter.replace(/^después de\s*/i, '')}</p>}
-            {habit.minVersion && <p className="text-[13px] text-blue-text">Mínimo: {habit.minVersion}</p>}
+            {habit.identity && <p className="text-[0.9375rem] font-medium">"{habit.identity}"</p>}
+            {habit.stackAfter && <p className="text-[0.8125rem] text-muted">Después de {habit.stackAfter.replace(/^después de\s*/i, '')}</p>}
+            {habit.minVersion && <p className="text-[0.8125rem] text-blue-text">Mínimo: {habit.minVersion}</p>}
           </div>
         </div>
         <div className="grid grid-cols-3 gap-2 mt-4">
@@ -64,7 +64,7 @@ export function HabitDetailScreen() {
           <Stat label="Mejor" value={`${streak.best}`} unit={streak.unit} />
           <Stat label="30 días" value={t30.pct === null ? '—' : `${t30.pct}%`} unit={tAll.pct === null ? '' : `total ${tAll.pct}%`} />
         </div>
-        <p className="text-[13px] text-muted mt-3">
+        <p className="text-[0.8125rem] text-muted mt-3">
           Puntos en los últimos 30 días:{' '}
           <span className="text-violet-text font-semibold">{formatSigned(pointsForRef(data.points, habit.id, addDays(today, -29), today))}</span>
         </p>
@@ -72,7 +72,7 @@ export function HabitDetailScreen() {
 
       {habit.frequency.type === 'weekly' && (
         <Card>
-          <p className="text-[13px] text-muted mb-3">{weeklyGoal(habit, idx, today).message}</p>
+          <p className="text-[0.8125rem] text-muted mb-3">{weeklyGoal(habit, idx, today).message}</p>
           <WeekStrip habit={habit} idx={idx} today={today} />
         </Card>
       )}
@@ -86,7 +86,7 @@ export function HabitDetailScreen() {
           </button>
         </div>
         <MonthGrid habit={habit} idx={idx} today={today} month={m} onDay={setEdit} />
-        <p className="text-[12px] text-dim mt-3">Toca cualquier día pasado para editar su registro.</p>
+        <p className="text-[0.75rem] text-dim mt-3">Toca cualquier día pasado para editar su registro.</p>
       </Card>
 
       <Card>
@@ -102,7 +102,7 @@ export function HabitDetailScreen() {
             const key = `${y}-${String(i + 1).padStart(2, '0')}-01`;
             return (
               <button key={name} className="text-left" onClick={() => setMonth(key)} aria-label={`Ver ${name}`}>
-                <p className="text-[11px] text-muted mb-1 capitalize">{name.slice(0, 3)}</p>
+                <p className="text-[0.6875rem] text-muted mb-1 capitalize">{name.slice(0, 3)}</p>
                 <MonthGrid habit={habit} idx={idx} today={today} month={key} compact />
               </button>
             );
@@ -118,9 +118,9 @@ export function HabitDetailScreen() {
 function Stat({ label, value, unit }: { label: string; value: string; unit: string }) {
   return (
     <div className="card2 p-3">
-      <p className="text-[11px] text-muted">{label}</p>
+      <p className="text-[0.6875rem] text-muted">{label}</p>
       <p className="text-xl font-bold mt-0.5">{value}</p>
-      <p className="text-[11px] text-dim">{unit}</p>
+      <p className="text-[0.6875rem] text-dim">{unit}</p>
     </div>
   );
 }
