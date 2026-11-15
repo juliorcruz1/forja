@@ -1,7 +1,7 @@
 /** All writes go through here. UI never touches Dexie tables directly. */
 import { db } from './db';
 import type {
-  BadHabit, FocusSession, Habit, HabitLog, JournalEntry, LogStatus, Relapse, Settings, Weekday, WindowKind,
+  BadHabit, FocusSession, Habit, HabitLog, JournalEntry, LogStatus, Relapse, Settings, Urge, Weekday, WindowKind,
   WindowLog,
 } from './types';
 import { defaultHabits, defaultSettings, defaultSocialHabit, normalizeSettings } from '../config/defaults';
@@ -269,10 +269,15 @@ export async function setBadHabitLifecycle(id: string, lifecycle: BadHabit['life
 }
 
 export async function deleteBadHabit(id: string) {
-  await db.transaction('rw', db.badHabits, db.relapses, db.usageLogs, async () => {
+  await db.transaction('rw', db.badHabits, db.relapses, db.usageLogs, db.urges, async () => {
     await db.badHabits.delete(id);
     await db.relapses.where('badHabitId').equals(id).delete();
     await db.usageLogs.where('badHabitId').equals(id).delete();
+    // Urges keep their time and result, but no longer point to the deleted habit
+    await db.urges.filter((u) => u.badHabitId === id).modify((u) => {
+      delete u.badHabitId;
+      delete u.relapseId;
+    });
   });
 }
 
@@ -415,3 +420,36 @@ export async function settleFocus(now: Date = new Date()) {
 }
 
 export const deleteFocus = (id: string) => db.focusSessions.delete(id);
+
+// ---------------- Stage 2: "Momento de ganas" ----------------
+
+/** Opens an urge: the trigger (time) is recorded right away, even without a result. */
+export async function startUrge(now: Date = new Date()): Promise<Urge> {
+  const t = nowIso();
+  const u: Urge = { id: uid(), date: toKeyDate(now), at: now.toISOString(), hour: now.getHours(), createdAt: t, updatedAt: t };
+  await db.urges.put(u);
+  return u;
+}
+
+export async function updateUrge(id: string, patch: Partial<Pick<Urge, 'situation' | 'feeling'>>) {
+  const u = await db.urges.get(id);
+  if (!u) return;
+  await db.urges.put({ ...u, ...patch, updatedAt: nowIso() });
+}
+
+/**
+ * "Resistí" (+points) or "Caí". A fall on a bad habit is registered as a relapse
+ * (no judgment: the counter restarts, the best mark stays).
+ */
+export async function resolveUrge(id: string, result: 'resisted' | 'fell', badHabitId?: string) {
+  return db.transaction('rw', db.urges, db.relapses, async () => {
+    const u = await db.urges.get(id);
+    if (!u) return;
+    let relapseId: string | undefined;
+    if (result === 'fell' && badHabitId) {
+      const r = await addRelapse(badHabitId, u.date, ['Momento de ganas', u.situation].filter(Boolean).join(': '));
+      relapseId = r.id;
+    }
+    await db.urges.put({ ...u, result, badHabitId: result === 'fell' ? badHabitId : undefined, relapseId, updatedAt: nowIso() });
+  });
+}

@@ -13,6 +13,7 @@ import { TodayScreen } from './screens/Today';
 import { StatsScreen } from './screens/Stats';
 import { PointsScreen } from './screens/Points';
 import { FocusScreen } from './screens/Focus';
+import { UrgeScreen } from './screens/Urge';
 import { MoreScreen } from './screens/More';
 import { SettingsScreen } from './screens/Settings';
 import { WeeklyReviewScreen } from './screens/WeeklyReview';
@@ -76,6 +77,7 @@ function AppRoutes() {
         <Route path="/stats" element={<StatsScreen />} />
         <Route path="/puntos" element={<PointsScreen />} />
         <Route path="/concentracion" element={<FocusScreen />} />
+        <Route path="/ganas" element={<UrgeScreen />} />
         <Route path="/mas" element={<MoreScreen />} />
         <Route path="/ajustes" element={<SettingsScreen />} />
         <Route path="/revision" element={<WeeklyReviewScreen />} />

@@ -10,6 +10,8 @@ import { useData } from '../hooks/useData';
 import { formatPts, summarize } from '../domain/points';
 import { isLimitHabit, limitOf, usageTrend } from '../domain/social';
 import { focusTotals, formatMinutes } from '../domain/focus';
+import { hourLabel, urgePatterns } from '../domain/urges';
+import { WEEKDAY_NAMES } from '../lib/dates';
 import type { BadHabit } from '../db/types';
 import { LevelBar } from '../components/PointsBits';
 import { MONTH_NAMES, minKey, WEEKDAY_LETTER, weekday } from '../lib/dates';
@@ -178,6 +180,7 @@ export function StatsScreen() {
           </div>
         </Card>
       )}
+      <UrgesCard period={period} />
     </Screen>
   );
 }
@@ -361,6 +364,59 @@ function FocusCard({ period }: { period: Period }) {
         <MiniStat label="Sesiones" value={t.sessions} />
         <MiniStat label="Promedio diario" value={formatMinutes(perDay)} />
       </div>
+    </Card>
+  );
+}
+
+/** When the urges show up: by day of the week and hour, with resisted vs. fell. */
+function UrgesCard({ period }: { period: Period }) {
+  const { urges, today } = useData()!;
+  const p = urgePatterns(urges, period.from, minKey(period.to, today));
+  const maxDay = Math.max(1, ...p.byWeekday);
+  const maxHour = Math.max(1, ...p.byHour);
+  return (
+    <Card>
+      <div className="flex items-baseline justify-between">
+        <p className="font-semibold">Momentos de ganas</p>
+        <Link to="/ganas" className="text-[13px] text-violet-text min-h-[32px] inline-flex items-center">Abrir</Link>
+      </div>
+      {p.total === 0 ? (
+        <p className="text-[13px] text-muted mt-1">
+          Sin registros en este periodo. Cuando te den ganas, usa el botón del Inicio: aquí verás tus días y horas más difíciles.
+        </p>
+      ) : (
+        <>
+          <div className="grid grid-cols-3 gap-2 mt-2 text-center">
+            <MiniStat label="Veces" value={p.total} />
+            <MiniStat label="Resististe" value={p.resisted} />
+            <MiniStat label="Caíste" value={p.fell} />
+          </div>
+          {p.topWeekday !== undefined && p.topHour !== undefined && (
+            <p className="text-[13px] text-muted mt-3">
+              Más ganas los <span className="text-ink">{WEEKDAY_NAMES[p.topWeekday]}</span> y alrededor de las{' '}
+              <span className="text-ink">{hourLabel(p.topHour)}</span>.
+            </p>
+          )}
+          <p className="text-[12px] text-muted mt-3 mb-1">Por día</p>
+          <div className="flex items-end gap-1.5 h-[56px]">
+            {p.byWeekday.map((n, i) => (
+              <div key={i} className="flex-1 flex flex-col items-center justify-end h-full gap-1">
+                <div className={`w-full rounded-t ${n ? 'bg-blue' : 'bg-line'}`} style={{ height: `${Math.max(6, (n / maxDay) * 100)}%` }} title={`${n}`} />
+                <span className="text-[10px] text-dim">{WEEKDAY_LETTER[i]}</span>
+              </div>
+            ))}
+          </div>
+          <p className="text-[12px] text-muted mt-3 mb-1">Por hora</p>
+          <div className="flex items-end gap-[2px] h-[48px]">
+            {p.byHour.map((n, h) => (
+              <div key={h} className={`flex-1 rounded-t ${n ? 'bg-blue' : 'bg-line'}`} style={{ height: `${Math.max(6, (n / maxHour) * 100)}%` }} title={`${hourLabel(h)}: ${n}`} />
+            ))}
+          </div>
+          <div className="flex justify-between text-[10px] text-dim mt-1">
+            <span>12 AM</span><span>6 AM</span><span>12 PM</span><span>6 PM</span><span>11 PM</span>
+          </div>
+        </>
+      )}
     </Card>
   );
 }

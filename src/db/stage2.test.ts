@@ -114,3 +114,63 @@ describe('focus sessions (time from start and end timestamps)', () => {
     expect(c.id).not.toBe(a.id);
   });
 });
+
+import { resolveUrge, startUrge, updateUrge } from './repo';
+import { urgePatterns, urgeSecondsLeft } from '../domain/urges';
+import { badHabitStats } from '../domain/bad';
+import { computePoints } from '../domain/points';
+import { DEFAULT_LEVELS, DEFAULT_POINTS } from '../config/defaults';
+
+describe('Momento de ganas', () => {
+  it('records the trigger at open; 2-minute countdown from that time', async () => {
+    const u = await startUrge(new Date(2026, 10, 17, 22, 15));
+    expect(u).toMatchObject({ date: '2026-11-17', hour: 22 });
+    expect(urgeSecondsLeft(u, 120, new Date(2026, 10, 17, 22, 15, 30))).toBe(90);
+    expect(urgeSecondsLeft(u, 120, new Date(2026, 10, 17, 22, 20))).toBe(0);
+    await updateUrge(u.id, { situation: 'Antes de dormir', feeling: 'Cansado' });
+    expect(await db.urges.get(u.id)).toMatchObject({ situation: 'Antes de dormir', feeling: 'Cansado' });
+  });
+
+  it('"Resistí" gives +3; "Caí" registers a relapse (counter resets, best mark kept)', async () => {
+    const b = await saveBadHabit({ name: 'Redes sin propósito', icon: 'smartphone', startDate: '2026-11-01' });
+    const r1 = await startUrge(new Date(2026, 10, 10, 21, 0));
+    await resolveUrge(r1.id, 'resisted');
+    const r2 = await startUrge(new Date(2026, 10, 12, 23, 0));
+    await updateUrge(r2.id, { situation: 'Aburrimiento' });
+    await resolveUrge(r2.id, 'fell', b.id);
+
+    const relapses = await db.relapses.toArray();
+    expect(relapses).toHaveLength(1);
+    expect(relapses[0]).toMatchObject({ date: '2026-11-12', note: 'Momento de ganas: Aburrimiento' });
+    expect((await db.urges.get(r2.id))!.relapseId).toBe(relapses[0].id);
+    expect(badHabitStats(b, relapses, '2026-11-14')).toMatchObject({ current: 2, best: 11 });
+
+    const points = computePoints({
+      habits: [], logs: [], badHabits: [b], relapses, urges: await db.urges.toArray(),
+      settings: { points: DEFAULT_POINTS, levels: DEFAULT_LEVELS, pointsStartDate: '2026-11-10' }, today: '2026-11-14',
+    });
+    expect(points.byDate.get('2026-11-10')!.items.map((i) => i.kind)).toContain('resisted');
+    expect(points.byDate.get('2026-11-12')!.items.map((i) => `${i.kind}:${i.pts}`)).toEqual(['relapse:-10']);
+  });
+
+  it('a fall without a habit is only recorded; deleting the habit keeps the urge without dangling ids', async () => {
+    const b = await saveBadHabit({ name: 'X', icon: 'tv', startDate: '2026-11-01' });
+    const u = await startUrge();
+    await resolveUrge(u.id, 'fell');
+    expect(await db.relapses.count()).toBe(0);
+    const u2 = await startUrge();
+    await resolveUrge(u2.id, 'fell', b.id);
+    await deleteBadHabit(b.id);
+    const kept = (await db.urges.get(u2.id))!;
+    expect(kept.result).toBe('fell');
+    expect(kept.badHabitId).toBeUndefined();
+    expect(kept.relapseId).toBeUndefined();
+  });
+
+  it('patterns by weekday and hour', () => {
+    const T = '2026-01-01T00:00:00.000Z';
+    const mk = (date: string, hour: number, result?: 'resisted' | 'fell') => ({ id: `${date}${hour}`, date, at: T, hour, result, createdAt: T, updatedAt: T });
+    const p = urgePatterns([mk('2026-11-12', 22, 'resisted'), mk('2026-11-19', 22, 'fell'), mk('2026-11-17', 15)], '2026-11-09', '2026-11-22');
+    expect(p).toMatchObject({ total: 3, resisted: 1, fell: 1, topWeekday: 3, topHour: 22 }); // Thursdays, 10 PM
+  });
+});
