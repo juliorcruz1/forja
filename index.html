@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0D0D11" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="description" content="Construir tu carácter mediante pequeñas acciones constantes." />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="FORJA" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <title>FORJA</title>
+    <style>
+      html, body { background: #0D0D11; margin: 0; }
+      #splash { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; background: #0D0D11; color: #9A9AAD; font: 600 13px system-ui, -apple-system, sans-serif; letter-spacing: .3em; }
+      #splash img { width: 96px; height: 96px; animation: forjaPulse 1.4s ease-in-out infinite; }
+      @keyframes forjaPulse { 0%,100% { opacity: .6; transform: scale(.96); } 50% { opacity: 1; transform: scale(1); } }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <div id="splash" aria-label="Cargando">
+        <img src="/favicon.svg" alt="" />
+        <span>FORJA</span>
+      </div>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

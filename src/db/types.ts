@@ -1,0 +1,138 @@
+import type { DateKey } from '../lib/dates';
+
+/** Every stored record has these. Timestamps are ISO strings. */
+export interface BaseRecord {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type HabitKind = 'check' | 'counter' | 'checklist';
+export type HabitLifecycle = 'active' | 'paused' | 'archived';
+
+/** 0 = Monday ... 6 = Sunday */
+export type Weekday = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+
+export type Frequency =
+  | { type: 'daily' }
+  | { type: 'days'; days: Weekday[] }
+  /** X times per week. plannedDays are a guide; any day counts toward the target. */
+  | { type: 'weekly'; target: number; plannedDays: Weekday[] };
+
+export interface ChecklistItem {
+  id: string;
+  name: string;
+  note?: string; // free text: dose, note… (entered by the user, never suggested)
+  timeOfDay?: 'mañana' | 'mediodía' | 'tarde' | 'noche' | '';
+  /** Must be checked for the habit to be "complete". */
+  required: boolean;
+  /** Checking all essential items = "minimum" version. */
+  essential: boolean;
+}
+
+export interface PauseRange {
+  from: DateKey;
+  to?: DateKey; // inclusive end; undefined = still paused
+}
+
+export interface Habit extends BaseRecord {
+  name: string;
+  icon: string;
+  kind: HabitKind;
+  frequency: Frequency;
+  minVersion?: string;
+  identity?: string;
+  stackAfter?: string;
+  required: boolean; // false = optional / bonus ("Extras")
+  lifecycle: HabitLifecycle;
+  /** First local day the habit counts. */
+  startDate: DateKey;
+  archivedAt?: DateKey;
+  pauses: PauseRange[];
+  order: number;
+  counterTarget?: number;
+  counterUnit?: string;
+  checklist?: ChecklistItem[];
+  /** Shows the bedtime for the day (sleep habit). */
+  sleepLinked?: boolean;
+}
+
+export type LogStatus = 'pending' | 'done' | 'min' | 'skipped' | 'rest';
+
+export interface HabitLog extends BaseRecord {
+  habitId: string;
+  date: DateKey;
+  status: LogStatus;
+  count?: number;
+  checked?: string[];
+  note?: string;
+}
+
+/** Per-week override of planned days for a weekly-target habit. id = `${habitId}:${weekStart}` */
+export interface WeekPlan extends BaseRecord {
+  habitId: string;
+  weekStart: DateKey;
+  plannedDays: Weekday[];
+}
+
+export interface BadHabit extends BaseRecord {
+  name: string;
+  icon: string;
+  trigger?: string;
+  replacement?: string;
+  startDate: DateKey;
+  lifecycle: HabitLifecycle;
+  archivedAt?: DateKey;
+  order: number;
+}
+
+export interface Relapse extends BaseRecord {
+  badHabitId: string;
+  date: DateKey;
+  note?: string;
+}
+
+export type Mood = 1 | 2 | 3 | 4 | 5;
+
+/** id = date */
+export interface JournalEntry extends BaseRecord {
+  date: DateKey;
+  mood?: Mood;
+  line: string;
+  reflection: string;
+  gratitude: string;
+  learning: string;
+  notes: string;
+}
+
+/** id = weekStart */
+export interface WeeklyReview extends BaseRecord {
+  weekStart: DateKey;
+  answers: string[];
+}
+
+/** id = date. Day-level flags. */
+export interface DayMeta extends BaseRecord {
+  date: DateKey;
+  heavy: boolean;
+}
+
+export interface DaySchedule {
+  off: boolean;
+  start: string; // 'HH:MM'
+  end: string;
+}
+
+export interface Settings extends BaseRecord {
+  /** index 0 = Monday */
+  work: DaySchedule[];
+  /** Usual bedtime per weekday (night of that day). index 0 = Monday */
+  bedtime: string[];
+  /** Suggested bedtime on critical nights. */
+  criticalBedtime: string;
+  /** A night is critical when the next day's work starts before this time. */
+  earlyStartThreshold: string;
+  weekStartsOn: 'monday';
+  lastBackupAt?: string;
+  seeded: boolean;
+}

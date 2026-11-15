@@ -1,0 +1,9 @@
+node_modules
+dist
+dev-dist
+*.local
+.vite
+# Never commit personal backups
+*.forja.json
+forja-respaldo-*.json
+respaldo*.json
