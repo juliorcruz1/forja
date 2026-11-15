@@ -1,0 +1,179 @@
+import { ChevronLeft, ChevronRight, Flame, Lightbulb, Trophy } from 'lucide-react';
+import { useState } from 'react';
+import { HabitIcon } from '../components/icons';
+import { Bar, Card, Empty, Screen, Segmented } from '../components/ui';
+import { badHabitStats, relapsesInRange } from '../domain/bad';
+import { bestOverallStreak, overallStreak } from '../domain/habits';
+import { observation, type Period, type PeriodKind, periodFor, periodStats } from '../domain/stats';
+import { useData } from '../hooks/useData';
+import { addDays, addMonths, monthStart, weekStart } from '../lib/dates';
+
+const PREV_LABEL: Record<PeriodKind, string> = { week: 'la semana anterior', month: 'el mes anterior', year: 'el año anterior' };
+
+function shift(p: Period, n: number): Period {
+  if (p.kind === 'week') return periodFor('week', addDays(p.from, 7 * n));
+  if (p.kind === 'month') return periodFor('month', addMonths(p.from, n));
+  return periodFor('year', `${Number(p.from.slice(0, 4)) + n}-06-01`);
+}
+
+export function StatsScreen() {
+  const data = useData();
+  const [kind, setKind] = useState<PeriodKind>('week');
+  const [offset, setOffset] = useState(0);
+  if (!data) return null;
+  const { habits, idx, today, badHabits, relapses } = data;
+  const period = shift(periodFor(kind, today), offset);
+  const s = periodStats(habits, idx, period, today);
+  const obs = observation(s);
+  const delta = s.overall.pct !== null && s.previous.pct !== null ? s.overall.pct - s.previous.pct : null;
+  const cur = overallStreak(habits, idx, today);
+  const best = bestOverallStreak(habits, idx, today);
+  const activeBad = badHabits.filter((b) => b.lifecycle !== 'archived');
+  const extrasTotal = s.extras.reduce((a, e) => a + e.days, 0);
+
+  return (
+    <Screen title="Estadísticas">
+      <Segmented
+        value={kind}
+        options={[{ value: 'week', label: 'Semana' }, { value: 'month', label: 'Mes' }, { value: 'year', label: 'Año' }]}
+        onChange={(k) => { setKind(k); setOffset(0); }}
+      />
+      <div className="flex items-center justify-between -my-1">
+        <button className="icon-btn" aria-label="Periodo anterior" onClick={() => setOffset(offset - 1)}><ChevronLeft size={20} /></button>
+        <p className="text-sm font-medium capitalize">{period.label}</p>
+        <button className="icon-btn disabled:opacity-25" aria-label="Periodo siguiente" disabled={offset >= 0} onClick={() => setOffset(offset + 1)}>
+          <ChevronRight size={20} />
+        </button>
+      </div>
+
+      <Card>
+        <p className="text-[13px] text-muted">Cumplimiento</p>
+        <div className="flex items-end gap-3 mt-1">
+          <p className="text-[48px] leading-none font-bold tracking-tight">{s.overall.pct === null ? '—' : `${s.overall.pct}%`}</p>
+          {delta !== null && (
+            <p className={`text-[13px] mb-1.5 ${delta >= 0 ? 'text-violet-text' : 'text-muted'}`}>
+              {delta >= 0 ? '+' : ''}{delta} pts vs {PREV_LABEL[kind]}
+            </p>
+          )}
+        </div>
+        <p className="text-[12px] text-dim mt-1">
+          {s.overall.done} de {s.overall.slots} cumplidos{extrasTotal > 0 ? ` · +${extrasTotal} extras` : ''}
+        </p>
+        <BarChart buckets={s.buckets} />
+      </Card>
+
+      <div className="grid grid-cols-2 gap-3.5">
+        <Card>
+          <Flame size={18} className="text-violet-text" />
+          <p className="text-3xl font-bold mt-2">{cur}</p>
+          <p className="text-[12px] text-muted">Racha actual (días)</p>
+        </Card>
+        <Card>
+          <Trophy size={18} className="text-blue-text" />
+          <p className="text-3xl font-bold mt-2">{best}</p>
+          <p className="text-[12px] text-muted">Mejor racha (días)</p>
+        </Card>
+      </div>
+
+      {obs && (
+        <div className="rounded-card border p-4 flex gap-3" style={{ background: '#1A1530', borderColor: '#3A2F66' }}>
+          <Lightbulb size={20} className="text-night-text shrink-0 mt-0.5" />
+          <div>
+            <p className="font-semibold text-night-text">Observación</p>
+            <p className="text-[14px] text-night-text/90 mt-0.5">{obs}</p>
+          </div>
+        </div>
+      )}
+
+      <Card>
+        <p className="font-semibold mb-3">Por hábito</p>
+        {s.perHabit.length === 0 ? (
+          <Empty>Sin datos en este periodo.</Empty>
+        ) : (
+          <div className="space-y-3.5">
+            {[...s.perHabit].sort((a, b) => (b.tally.pct ?? -1) - (a.tally.pct ?? -1)).map(({ habit, tally }) => (
+              <div key={habit.id}>
+                <div className="flex items-center justify-between text-[14px] mb-1.5">
+                  <span className="flex items-center gap-2 min-w-0">
+                    <HabitIcon name={habit.icon} size={15} className="text-muted" />
+                    <span className="truncate">{habit.name}</span>
+                  </span>
+                  <span className="text-muted shrink-0">
+                    {tally.pct === null ? '—' : `${tally.pct}%`}
+                    <span className="text-dim text-[12px]"> · {tally.done}/{tally.slots}</span>
+                  </span>
+                </div>
+                <Bar pct={tally.pct ?? 0} />
+              </div>
+            ))}
+          </div>
+        )}
+        {s.extras.length > 0 && (
+          <div className="mt-4 pt-3 border-t border-line space-y-1.5">
+            {s.extras.map((e) => (
+              <div key={e.habit.id} className="flex items-center justify-between text-[13px]">
+                <span className="text-blue-text">{e.habit.name} (extra)</span>
+                <span className="text-muted">{e.days} {e.days === 1 ? 'día' : 'días'}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      {activeBad.length > 0 && (
+        <Card>
+          <p className="font-semibold mb-3">Hábitos malos</p>
+          <div className="space-y-3">
+            {activeBad.map((b) => {
+              const st = badHabitStats(b, relapses, today);
+              const ws = weekStart(today);
+              const ms = monthStart(today);
+              return (
+                <div key={b.id} className="card2 p-3">
+                  <p className="text-[14px] font-medium flex items-center gap-2">
+                    <HabitIcon name={b.icon} size={15} className="text-muted" /> {b.name}
+                  </p>
+                  <div className="grid grid-cols-4 gap-2 mt-2 text-center">
+                    <MiniStat label="Días sin" value={st.current} />
+                    <MiniStat label="Mejor" value={st.best} />
+                    <MiniStat label="Rec. semana" value={relapsesInRange(b, relapses, ws, addDays(ws, 6))} />
+                    <MiniStat label="Rec. mes" value={relapsesInRange(b, relapses, ms, addDays(addMonths(ms, 1), -1))} />
+                  </div>
+                  <p className="text-[11px] text-dim mt-2">En este periodo: {relapsesInRange(b, relapses, period.from, period.to)} recaídas</p>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
+    </Screen>
+  );
+}
+
+function MiniStat({ label, value }: { label: string; value: number }) {
+  return (
+    <div>
+      <p className="text-lg font-bold">{value}</p>
+      <p className="text-[10px] text-muted leading-tight">{label}</p>
+    </div>
+  );
+}
+
+function BarChart({ buckets }: { buckets: { label: string; pct: number | null; from: string }[] }) {
+  return (
+    <div className="flex items-end gap-1.5 h-[120px] mt-4" role="img" aria-label="Cumplimiento por periodo">
+      {buckets.map((b) => (
+        <div key={b.from} className="flex-1 flex flex-col items-center gap-1.5 h-full">
+          <div className="flex-1 w-full flex items-end">
+            <div
+              className={`w-full rounded-md ${b.pct === null ? 'bg-line' : b.pct >= 100 ? 'bg-violet' : 'bg-gradient-to-t from-violet/70 to-blue/80'}`}
+              style={{ height: b.pct === null ? 4 : `${Math.max(4, b.pct)}%`, transition: 'height 500ms ease' }}
+              title={b.pct === null ? 'sin datos' : `${b.pct}%`}
+            />
+          </div>
+          <span className="text-[10px] text-dim">{b.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}

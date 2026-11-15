@@ -11,6 +11,7 @@ import { HabitDetailScreen } from './screens/HabitDetail';
 import { HabitFormScreen } from './screens/HabitForm';
 import { HabitsScreen } from './screens/Habits';
 import { TodayScreen } from './screens/Today';
+import { StatsScreen } from './screens/Stats';
 import { JournalHistoryScreen, JournalScreen } from './screens/Journal';
 
 function Placeholder({ title }: { title: string }) {
@@ -57,7 +58,7 @@ function AppRoutes() {
         <Route path="/diario" element={<JournalScreen />} />
         <Route path="/diario/historial" element={<JournalHistoryScreen />} />
         <Route path="/diario/:date" element={<JournalScreen />} />
-        <Route path="/stats" element={<Placeholder title="Estadísticas" />} />
+        <Route path="/stats" element={<StatsScreen />} />
         <Route path="/mas" element={<Placeholder title="Más" />} />
         <Route path="*" element={<Navigate to="/hoy" replace />} />
       </Routes>
