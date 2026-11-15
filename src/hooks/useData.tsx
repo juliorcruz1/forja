@@ -6,6 +6,7 @@ import type {
 } from '../db/types';
 import { normalizeSettings } from '../config/defaults';
 import { HabitIndex } from '../domain/habits';
+import { computePoints, type PointsResult } from '../domain/points';
 import { type DateKey, todayKey } from '../lib/dates';
 
 export interface AppData {
@@ -23,6 +24,8 @@ export interface AppData {
   windowLogs: WindowLog[];
   focusSessions: FocusSession[];
   urges: Urge[];
+  /** Derived from the records on every change (memoized per day). */
+  points: PointsResult;
 }
 
 const Ctx = createContext<AppData | undefined>(undefined);
@@ -50,11 +53,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
   });
   const value = useMemo<AppData | undefined>(() => {
     if (!raw || !raw.settings) return undefined;
+    const settings = normalizeSettings(raw.settings, today);
+    const points = computePoints({
+      habits: raw.habits, logs: raw.logs, plans: raw.plans, badHabits: raw.badHabits, relapses: raw.relapses,
+      usageLogs: raw.usageLogs, windowLogs: raw.windowLogs, focusSessions: raw.focusSessions, urges: raw.urges,
+      jokers: raw.jokers, dayMeta: raw.dayMeta, settings, today,
+    });
     return {
       habits: [...raw.habits].sort((a, b) => a.order - b.order),
       badHabits: [...raw.badHabits].sort((a, b) => a.order - b.order),
       relapses: raw.relapses,
-      settings: normalizeSettings(raw.settings, today),
+      settings,
       dayMeta: raw.dayMeta,
       idx: new HabitIndex(raw.logs, raw.plans),
       today,
@@ -64,6 +73,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       windowLogs: raw.windowLogs,
       focusSessions: raw.focusSessions,
       urges: raw.urges,
+      points,
     };
   }, [raw, today]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

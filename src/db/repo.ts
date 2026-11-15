@@ -6,7 +6,7 @@ import type {
 import { defaultHabits, defaultSettings, defaultSocialHabit, normalizeSettings } from '../config/defaults';
 import { counterStatus } from '../domain/habits';
 import { checklistStatus, validChecked } from '../domain/checklist';
-import { addDays as addDaysSafe, type DateKey, todayKey } from '../lib/dates';
+import { addDays as addDaysSafe, type DateKey, todayKey, weekStart as weekStartOf } from '../lib/dates';
 import { nowIso, uid } from '../lib/id';
 
 export async function ensureSeeded(today: DateKey = todayKey()): Promise<void> {
@@ -316,3 +316,18 @@ export async function updateSettings(patch: Partial<Settings>) {
   await db.settings.put({ ...s, ...patch, id: 'settings', updatedAt: nowIso() });
 }
 
+
+// ---------------- Stage 2: jokers (comodín) ----------------
+
+/** Uses this week's joker on `date` (1 per week, Monday–Sunday). Returns false if already used. */
+export async function applyJoker(date: DateKey): Promise<boolean> {
+  return db.transaction('rw', db.jokers, async () => {
+    const ws = weekStartOf(date);
+    if ((await db.jokers.where('weekStart').equals(ws).count()) > 0) return false;
+    const t = nowIso();
+    await db.jokers.put({ id: date, date, weekStart: ws, createdAt: t, updatedAt: t });
+    return true;
+  });
+}
+
+export const removeJoker = (date: DateKey) => db.jokers.delete(date);

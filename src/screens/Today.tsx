@@ -5,6 +5,7 @@ import { useLongPress } from '../hooks/useLongPress';
 import type { BadHabit } from '../db/types';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { OneOffSheet } from '../components/OneOffSheet';
+import { DayPointsChip, JokerRow, LevelChip } from '../components/PointsBits';
 import { DayStatusSheet } from '../components/DayStatusSheet';
 import { HabitRow } from '../components/HabitRow';
 import { HabitIcon } from '../components/icons';
@@ -34,7 +35,7 @@ export function TodayScreen() {
     return () => window.clearTimeout(t);
   }, [toast]);
   if (!data) return null;
-  const { habits, idx, today, settings, badHabits, relapses, dayMeta } = data;
+  const { habits, idx, today, settings, badHabits, relapses, dayMeta, points } = data;
   const qd = params.get('d');
   const date = qd && isValidKey(qd) && qd <= today ? qd : today;
   const isToday = date === today;
@@ -68,14 +69,17 @@ export function TodayScreen() {
       title={title}
       subtitle={formatLong(date)}
       right={
-        <>
-          <button className="icon-btn" aria-label="Día anterior" onClick={() => go(-1)}>
-            <ChevronLeft size={22} />
-          </button>
-          <button className="icon-btn disabled:opacity-25" aria-label="Día siguiente" disabled={isToday} onClick={() => go(1)}>
-            <ChevronRight size={22} />
-          </button>
-        </>
+        <div className="flex flex-col items-end gap-1">
+          <LevelChip level={points.level} total={points.total} />
+          <div className="flex -mr-2">
+            <button className="icon-btn" aria-label="Día anterior" onClick={() => go(-1)}>
+              <ChevronLeft size={22} />
+            </button>
+            <button className="icon-btn disabled:opacity-25" aria-label="Día siguiente" disabled={isToday} onClick={() => go(1)}>
+              <ChevronRight size={22} />
+            </button>
+          </div>
+        </div>
       }
     >
       {!isToday && (
@@ -94,15 +98,18 @@ export function TodayScreen() {
               {progress.done} de {progress.total} hábitos
             </p>
             <p className="text-[13px] text-muted mt-0.5 line-clamp-2">{missingText}</p>
-            <div className="flex items-center gap-3 mt-2 text-[13px]">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-2 text-[13px]">
               <span className="flex items-center gap-1 text-violet-text">
                 <Flame size={15} /> {streak} {streak === 1 ? 'día' : 'días'} de racha
               </span>
               {extrasDone > 0 && <span className="text-blue-text">+{extrasDone} extra</span>}
+              {date >= settings.pointsStartDate && <DayPointsChip day={points.byDate.get(date)} isToday={isToday} />}
             </div>
           </div>
         </div>
       </Card>
+
+      {((!isToday && progress.missing.length > 0) || data.jokers.some((j) => j.date === date)) && <JokerRow date={date} />}
 
       {needBackup && (
         <Link to="/ajustes#respaldo" className="card2 px-4 py-3 flex items-center gap-3 text-[13px]">

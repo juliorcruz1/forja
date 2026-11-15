@@ -54,6 +54,8 @@ export interface PointItem {
   label: string;
   /** Positive for gains, negative for losses (after the daily cap). */
   pts: number;
+  /** Habit or bad-habit id the item belongs to, when it has one. */
+  ref?: string;
 }
 
 export interface DayPoints {
@@ -325,15 +327,15 @@ function computeDayCore(d: DateKey, c: DayCtx): DayCore {
     if (h.required && !h.oneOffDate) {
       const e = evalDay(h, d, idx, today);
       if (e.counts && e.done) {
-        if (status === 'min') items.push({ kind: 'min', label: `${h.name} (mínimo)`, pts: P.min });
-        else if (h.kind === 'counter') items.push({ kind: 'counter', label: `${h.name}: meta del día`, pts: P.hydration });
-        else items.push({ kind: 'done', label: h.name, pts: P.done });
+        if (status === 'min') items.push({ kind: 'min', label: `${h.name} (mínimo)`, pts: P.min, ref: h.id });
+        else if (h.kind === 'counter') items.push({ kind: 'counter', label: `${h.name}: meta del día`, pts: P.hydration, ref: h.id });
+        else items.push({ kind: 'done', label: h.name, pts: P.done, ref: h.id });
       } else if (e.counts && !e.done && closed && h.frequency.type !== 'weekly') {
         // Weekly goals are judged when the week closes, not day by day.
-        capped.push({ kind: 'missed', label: `${h.name} sin cumplir`, pts: -P.missed });
+        capped.push({ kind: 'missed', label: `${h.name} sin cumplir`, pts: -P.missed, ref: h.id });
       }
     } else if (done && (h.oneOffDate === d || isActiveOn(h, d))) {
-      items.push({ kind: 'extra', label: `${h.name} (extra)`, pts: P.extra });
+      items.push({ kind: 'extra', label: `${h.name} (extra)`, pts: P.extra, ref: h.id });
     }
   }
 
@@ -351,11 +353,11 @@ function computeDayCore(d: DateKey, c: DayCtx): DayCore {
     const countToday = weekCount(h, ws, idx, d);
     const countBefore = weekday(d) === 0 ? 0 : weekCount(h, ws, idx, addDays(d, -1));
     if (countToday >= target && countBefore < target) {
-      items.push({ kind: 'weekly', label: `${h.name}: meta semanal`, pts: P.weeklyGoal });
+      items.push({ kind: 'weekly', label: `${h.name}: meta semanal`, pts: P.weeklyGoal, ref: h.id });
     }
     if (weekday(d) === 6 && closed && ws >= c.start && !isPartialWeek(h, ws) && weekState(h, ws, idx, today) === 'missed') {
       const missing = target - weekCount(h, ws, idx);
-      uncapped.push({ kind: 'weeklyMiss', label: `${h.name}: faltaron ${missing} de ${target}`, pts: -missing * P.weeklyMissPerDay });
+      uncapped.push({ kind: 'weeklyMiss', label: `${h.name}: faltaron ${missing} de ${target}`, pts: -missing * P.weeklyMissPerDay, ref: h.id });
     }
   }
 
@@ -365,13 +367,13 @@ function computeDayCore(d: DateKey, c: DayCtx): DayCore {
     if ((b.mode ?? 'days') === 'days') {
       const fell = c.relapses.filter((r) => r.badHabitId === b.id);
       if (!closed) continue;
-      if (fell.length) uncapped.push({ kind: 'relapse', label: `Recaída: ${b.name}`, pts: -P.relapse * fell.length });
-      else if (b.lifecycle === 'active') items.push({ kind: 'badClean', label: `${b.name}: día sin caer`, pts: P.badCleanDay });
+      if (fell.length) uncapped.push({ kind: 'relapse', label: `Recaída: ${b.name}`, pts: -P.relapse * fell.length, ref: b.id });
+      else if (b.lifecycle === 'active') items.push({ kind: 'badClean', label: `${b.name}: día sin caer`, pts: P.badCleanDay, ref: b.id });
     } else {
       const u = c.usage.find((x) => x.badHabitId === b.id);
       if (!u || !closed) continue;
-      if (u.minutes <= (b.limitMinutes ?? 60)) items.push({ kind: 'socialWithin', label: `${b.name}: dentro del límite`, pts: P.socialWithin });
-      else capped.push({ kind: 'socialOver', label: `${b.name}: sobre el límite`, pts: -P.socialOver });
+      if (u.minutes <= (b.limitMinutes ?? 60)) items.push({ kind: 'socialWithin', label: `${b.name}: dentro del límite`, pts: P.socialWithin, ref: b.id });
+      else capped.push({ kind: 'socialOver', label: `${b.name}: sobre el límite`, pts: -P.socialOver, ref: b.id });
     }
   }
 
@@ -422,3 +424,13 @@ export function summarize(result: PointsResult, from: DateKey, to: DateKey): Poi
 
 /** "1.240" */
 export const formatPts = (n: number) => n.toLocaleString('es-MX');
+
+/** Net points a habit (or bad habit) earned in a date range. */
+export function pointsForRef(result: PointsResult, ref: string, from: DateKey, to: DateKey): number {
+  let n = 0;
+  for (const d of result.days) {
+    if (d.date < from || d.date > to) continue;
+    for (const i of d.items) if (i.ref === ref) n += i.pts;
+  }
+  return n;
+}

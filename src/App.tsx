@@ -11,6 +11,7 @@ import { HabitFormScreen } from './screens/HabitForm';
 import { HabitsScreen } from './screens/Habits';
 import { TodayScreen } from './screens/Today';
 import { StatsScreen } from './screens/Stats';
+import { PointsScreen } from './screens/Points';
 import { MoreScreen } from './screens/More';
 import { SettingsScreen } from './screens/Settings';
 import { WeeklyReviewScreen } from './screens/WeeklyReview';
@@ -54,6 +55,7 @@ function AppRoutes() {
         <Route path="/diario/historial" element={<JournalHistoryScreen />} />
         <Route path="/diario/:date" element={<JournalScreen />} />
         <Route path="/stats" element={<StatsScreen />} />
+        <Route path="/puntos" element={<PointsScreen />} />
         <Route path="/mas" element={<MoreScreen />} />
         <Route path="/ajustes" element={<SettingsScreen />} />
         <Route path="/revision" element={<WeeklyReviewScreen />} />

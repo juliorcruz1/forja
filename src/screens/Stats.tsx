@@ -7,6 +7,9 @@ import { badHabitStats, relapsesInRange } from '../domain/bad';
 import { bestOverallStreak, overallStreak } from '../domain/habits';
 import { observation, type Period, type PeriodKind, periodFor, periodStats } from '../domain/stats';
 import { useData } from '../hooks/useData';
+import { formatPts, summarize } from '../domain/points';
+import { LevelBar } from '../components/PointsBits';
+import { MONTH_NAMES, minKey, WEEKDAY_LETTER, weekday } from '../lib/dates';
 import { addDays, addMonths, monthStart, weekStart } from '../lib/dates';
 
 const PREV_LABEL: Record<PeriodKind, string> = { week: 'la semana anterior', month: 'el mes anterior', year: 'el año anterior' };
@@ -76,6 +79,8 @@ export function StatsScreen() {
           <p className="text-[12px] text-muted">Mejor racha (días)</p>
         </Card>
       </div>
+
+      <PointsCard period={period} />
 
       <div className="rounded-card border p-4 flex gap-3" style={{ background: '#1A1530', borderColor: '#3A2F66' }}>
         <Lightbulb size={20} className="text-night-text shrink-0 mt-0.5" />
@@ -196,5 +201,87 @@ function BarChart({ buckets }: { buckets: { label: string; pct: number | null; f
         </div>
       ))}
     </div>
+  );
+}
+
+/** Points of the selected period: net, gains, losses, chart per day (per month for a year) and breakdown. */
+function PointsCard({ period }: { period: Period }) {
+  const { points, today, settings } = useData()!;
+  const to = minKey(period.to, today);
+  const sum = summarize(points, period.from, to);
+  const bars =
+    period.kind === 'year'
+      ? MONTH_NAMES.map((m, i) => {
+          const from = addMonths(period.from, i);
+          const end = addDays(addMonths(from, 1), -1);
+          return { key: m, label: m.slice(0, 1).toUpperCase(), net: sum.perDay.filter((d) => d.date >= from && d.date <= end).reduce((a, d) => a + d.net, 0) };
+        })
+      : sum.perDay.map((d) => ({
+          key: d.date,
+          label: period.kind === 'week' ? WEEKDAY_LETTER[weekday(d.date)] : Number(d.date.slice(8)) % 5 === 1 ? String(Number(d.date.slice(8))) : '',
+          net: d.net,
+        }));
+  const maxAbs = Math.max(1, ...bars.map((b) => Math.abs(b.net)));
+  const hasNeg = bars.some((b) => b.net < 0);
+  const gains = sum.byKind.filter((k) => k.pts > 0);
+  const losses = sum.byKind.filter((k) => k.pts < 0);
+
+  return (
+    <Card>
+      <div className="flex items-baseline justify-between">
+        <p className="font-semibold">Puntos</p>
+        <Link to="/puntos" className="text-[13px] text-violet-text min-h-[32px] inline-flex items-center">Detalle</Link>
+      </div>
+      {period.to < settings.pointsStartDate ? (
+        <p className="text-sm text-muted mt-2">Los puntos cuentan desde el {settings.pointsStartDate}.</p>
+      ) : (
+        <>
+          <div className="flex items-end gap-4 mt-1">
+            <p className="text-[40px] leading-none font-bold tracking-tight">{sum.net >= 0 ? '+' : ''}{formatPts(sum.net)}</p>
+            <p className="text-[13px] text-muted mb-1">+{formatPts(sum.gain)} ganados · −{formatPts(sum.loss)} restados</p>
+          </div>
+          <div className="flex items-stretch gap-[3px] h-[110px] mt-4" role="img" aria-label="Puntos por día">
+            {bars.map((b) => (
+              <div key={b.key} className="flex-1 flex flex-col min-w-0">
+                <div className={`flex-1 flex flex-col ${hasNeg ? '' : 'justify-end'}`}>
+                  <div className={`${hasNeg ? 'h-1/2' : 'h-full'} flex items-end`}>
+                    {b.net > 0 && <div className="w-full rounded-t bg-violet" style={{ height: `${(b.net / maxAbs) * 100}%` }} title={`+${b.net}`} />}
+                  </div>
+                  {hasNeg && (
+                    <div className="h-1/2 flex items-start border-t border-line">
+                      {b.net < 0 && <div className="w-full rounded-b bg-line2" style={{ height: `${(-b.net / maxAbs) * 100}%` }} title={`${b.net}`} />}
+                    </div>
+                  )}
+                </div>
+                <span className="text-[10px] text-dim text-center h-4 mt-1">{b.label}</span>
+              </div>
+            ))}
+          </div>
+          {(gains.length > 0 || losses.length > 0) && (
+            <div className="grid grid-cols-1 gap-3 mt-4 pt-3 border-t border-line">
+              {gains.length > 0 && (
+                <ul className="space-y-1 text-[13px]">
+                  <li className="text-[12px] font-semibold text-muted">Cómo los ganaste</li>
+                  {gains.map((k) => (
+                    <li key={k.kind} className="flex justify-between"><span className="text-muted">{k.label}</span><span className="text-violet-text">+{formatPts(k.pts)}</span></li>
+                  ))}
+                </ul>
+              )}
+              {losses.length > 0 && (
+                <ul className="space-y-1 text-[13px]">
+                  <li className="text-[12px] font-semibold text-muted">Restas</li>
+                  {losses.map((k) => (
+                    <li key={k.kind} className="flex justify-between"><span className="text-muted">{k.label}</span><span>−{formatPts(-k.pts)}</span></li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+          <div className="mt-4 pt-3 border-t border-line">
+            <LevelBar level={points.level} maxTotal={points.maxTotal} />
+          </div>
+        </>
+      )}
+    </Card>
   );
 }

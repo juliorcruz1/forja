@@ -8,6 +8,9 @@ import { Card, Screen } from '../components/ui';
 import { WeekStrip } from '../components/WeekStrip';
 import { habitStreak, weeklyGoal } from '../domain/habits';
 import { habitTally } from '../domain/stats';
+import { pointsForRef } from '../domain/points';
+
+const formatSigned = (n: number) => `${n >= 0 ? '+' : '−'}${Math.abs(n).toLocaleString('es-MX')}`;
 import { useData } from '../hooks/useData';
 import { addDays, addMonths, type DateKey, formatMonth, MONTH_NAMES, monthStart } from '../lib/dates';
 
@@ -61,6 +64,10 @@ export function HabitDetailScreen() {
           <Stat label="Mejor" value={`${streak.best}`} unit={streak.unit} />
           <Stat label="30 días" value={t30.pct === null ? '—' : `${t30.pct}%`} unit={tAll.pct === null ? '' : `total ${tAll.pct}%`} />
         </div>
+        <p className="text-[13px] text-muted mt-3">
+          Puntos en los últimos 30 días:{' '}
+          <span className="text-violet-text font-semibold">{formatSigned(pointsForRef(data.points, habit.id, addDays(today, -29), today))}</span>
+        </p>
       </Card>
 
       {habit.frequency.type === 'weekly' && (

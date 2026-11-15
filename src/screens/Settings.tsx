@@ -10,6 +10,7 @@ import { updateSettings } from '../db/repo';
 import type { DaySchedule } from '../db/types';
 import { nightInfo } from '../domain/sleep';
 import { useData } from '../hooks/useData';
+import { PointsSettings } from '../components/SettingsStage2';
 import { addDays, formatTime, WEEKDAY_NAMES, weekStart } from '../lib/dates';
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -20,7 +21,9 @@ export function SettingsScreen() {
   const { hash } = useLocation();
   const backupRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (hash === '#respaldo') setTimeout(() => backupRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+    if (!hash) return;
+    const id = hash.slice(1);
+    setTimeout(() => (id === 'respaldo' ? backupRef.current : document.getElementById(id))?.scrollIntoView({ behavior: 'smooth' }), 50);
   }, [hash]);
   if (!data) return null;
   const { settings, today } = data;
@@ -111,6 +114,8 @@ export function SettingsScreen() {
           <span className="text-[15px] text-muted">Lunes</span>
         </div>
       </Card>
+
+      <PointsSettings />
 
       <div ref={backupRef} className="scroll-mt-4">
         <BackupCard lastBackupAt={settings.lastBackupAt} />
