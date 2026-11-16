@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { HashRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { HashRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { BottomNav } from './components/BottomNav';
 import { Logo } from './components/Logo';
 import { BRAND } from './config/brand';
 import { ensureSeeded, settleFocus, syncMedalUnlocks } from './db/repo';
 import { medalSyncPlan } from './domain/medals';
+import { hasUnsaved, leaveSafely } from './lib/autosave';
 import { MedalsScreen } from './screens/Medals';
 import { PrintScreen } from './screens/Print';
 import { DataProvider, useData } from './hooks/useData';
@@ -42,6 +43,28 @@ function ScrollToTop() {
   return null;
 }
 
+/**
+ * Leaving a screen with unsaved text (Diario, Revisión): any in-app link (bottom bar,
+ * Historial, a past day…) first saves, then navigates.
+ */
+function SaveGuard() {
+  const nav = useNavigate();
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const a = (e.target as Element | null)?.closest?.('a[href^="#/"]');
+      if (!a || !hasUnsaved()) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const to = a.getAttribute('href')!.slice(1);
+      void leaveSafely(() => nav(to));
+    };
+    document.addEventListener('click', onClick, true);
+    return () => document.removeEventListener('click', onClick, true);
+  }, [nav]);
+  return null;
+}
+
 /** Closes focus sessions that ended while the app was closed or in the background. */
 function FocusSettler() {
   useEffect(() => {
@@ -76,6 +99,7 @@ function AppRoutes() {
   return (
     <div className="app-shell">
       <ScrollToTop />
+      <SaveGuard />
       <FocusSettler />
       <MedalSync />
       <main id="scroll-root" className="app-main">

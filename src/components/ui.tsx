@@ -2,10 +2,11 @@ import { Check, ChevronLeft, X } from 'lucide-react';
 import { type ReactNode, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { LogStatus } from '../db/types';
+import { leaveSafely } from '../lib/autosave';
 
 export function Screen({
-  title, subtitle, right, back, children,
-}: { title: string; subtitle?: string; right?: ReactNode; back?: boolean | string; children: ReactNode }) {
+  title, subtitle, right, back, children, titleAside,
+}: { title: string; subtitle?: string; right?: ReactNode; back?: boolean | string; children: ReactNode; titleAside?: ReactNode }) {
   const nav = useNavigate();
   return (
     <div className="safe-top pb-nav px-4 max-w-[480px] mx-auto">
@@ -15,14 +16,17 @@ export function Screen({
             <button
               className="icon-btn shrink-0 -ml-3 mb-0.5"
               aria-label="Volver"
-              onClick={() => (typeof back === 'string' ? nav(back) : nav(-1))}
+              onClick={() => leaveSafely(() => (typeof back === 'string' ? nav(back) : nav(-1)))}
             >
               <ChevronLeft size={24} />
             </button>
           )}
           <div className="min-w-0">
             {subtitle && <p className="text-[0.8125rem] text-muted font-medium mb-0.5 line-clamp-2">{subtitle}</p>}
-            <h1 className="text-[1.75rem] leading-tight font-bold tracking-tight truncate">{title}</h1>
+            <div className="flex flex-wrap items-baseline gap-x-2 min-w-0">
+              <h1 className="text-[1.75rem] leading-tight font-bold tracking-tight truncate">{title}</h1>
+              {titleAside}
+            </div>
           </div>
         </div>
         {right && <div className="flex items-center gap-1 shrink-0">{right}</div>}

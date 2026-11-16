@@ -1,8 +1,10 @@
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Check, ChevronLeft, ChevronRight, Printer } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { ChevronLeft, ChevronRight, Printer } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { HabitIcon } from '../components/icons';
+import { SaveBar, SaveStatus, useAutoSaver } from '../components/SaveBits';
+import { AutoSaver, leaveSafely } from '../lib/autosave';
 import { Card, Screen } from '../components/ui';
 import { WEEKLY_REVIEW_QUESTIONS } from '../config/defaults';
 import { db } from '../db/db';
@@ -21,6 +23,14 @@ export function WeeklyReviewScreen() {
   const current = today ? weekStart(today) : '';
   const ws: DateKey = week && isValidKey(week) && weekStart(week) === week && week <= current ? week : current;
   const review = useLiveQuery(async () => ({ ws, r: await db.reviews.get(ws) }), [ws]);
+  const [saver, saveState] = useAutoSaver(
+    () => new AutoSaver<ReviewPatch>({ save: (p) => (p.answers ? saveReview(ws, p.answers) : Promise.resolve()), draftKey: reviewDraftKey(ws) }),
+    [ws],
+  );
+  const loaded = review?.ws === ws ? review.r : undefined;
+  useEffect(() => {
+    if (loaded?.answers.some((a) => a.trim())) saver.noteStored(new Date(loaded.updatedAt));
+  }, [saver, loaded]);
   if (!data || !review || review.ws !== ws) return null;
   const { habits, idx, badHabits, relapses } = data;
 
@@ -31,10 +41,11 @@ export function WeeklyReviewScreen() {
   const worst = ranked.length > 2 ? ranked.slice(-2).reverse() : [];
   const weekly = habits.filter((h) => h.frequency.type === 'weekly' && h.lifecycle !== 'archived' && h.startDate <= p.to);
   const relapseTotal = badHabits.reduce((a, b) => a + relapsesInRange(b, relapses, p.from, p.to), 0);
-  const go = (n: number) => nav(`/revision/${addDays(ws, 7 * n)}`, { replace: true });
+  const go = (n: number) => leaveSafely(() => nav(`/revision/${addDays(ws, 7 * n)}`, { replace: true }));
 
   return (
     <Screen title="Revisión" subtitle={`Semana del ${p.label}`} back="/mas"
+      titleAside={<SaveStatus state={saveState} onRetry={() => void saver.retry()} />}
       right={
         <>
           <button className="icon-btn" aria-label="Semana anterior" onClick={() => go(-1)}><ChevronLeft size={22} /></button>
@@ -86,7 +97,7 @@ export function WeeklyReviewScreen() {
         </div>
       )}
 
-      <Answers key={ws} ws={ws} initial={review.r?.answers ?? []} />
+      <Answers key={ws} saver={saver} initial={review.r?.answers ?? []} updatedAt={review.r?.updatedAt} />
 
       <Link to={`/imprimir/${ws}?modo=archivo`} className="pill-ghost w-full">
         <Printer size={17} /> Imprimir / Guardar PDF
@@ -98,23 +109,21 @@ export function WeeklyReviewScreen() {
   );
 }
 
-function Answers({ ws, initial }: { ws: DateKey; initial: string[] }) {
-  const [answers, setAnswers] = useState<string[]>(WEEKLY_REVIEW_QUESTIONS.map((_, i) => initial[i] ?? ''));
-  const [saved, setSaved] = useState(false);
-  const timer = useRef<number>();
-  const latest = useRef(answers);
-  const dirty = useRef(false);
+type ReviewPatch = { answers: string[] };
+export const reviewDraftKey = (ws: DateKey) => `forja.borrador.revision.${ws}`;
 
-  const flush = () => {
-    window.clearTimeout(timer.current);
-    if (!dirty.current) return;
-    dirty.current = false;
-    saveReview(ws, latest.current).then(() => {
-      setSaved(true);
-      window.setTimeout(() => setSaved(false), 1200);
-    });
-  };
-  useEffect(() => () => flush(), []); // eslint-disable-line react-hooks/exhaustive-deps
+function Answers({ saver, initial, updatedAt }: { saver: AutoSaver<ReviewPatch>; initial: string[]; updatedAt?: string }) {
+  const [recovered] = useState(() => saver.readDraft(updatedAt)?.answers);
+  const [answers, setAnswers] = useState<string[]>(() => WEEKLY_REVIEW_QUESTIONS.map((_, i) => (recovered ?? initial)[i] ?? ''));
+
+  useEffect(() => {
+    if (recovered) {
+      saver.change({ answers: recovered });
+      void saver.flush();
+    }
+  }, [saver, recovered]);
+
+  const flush = () => void saver.flush();
 
   return (
     <>
@@ -130,18 +139,13 @@ function Answers({ ws, initial }: { ws: DateKey; initial: string[] }) {
             onChange={(e) => {
               const next = answers.map((a, j) => (j === i ? e.target.value : a));
               setAnswers(next);
-              latest.current = next;
-              dirty.current = true;
-              window.clearTimeout(timer.current);
-              timer.current = window.setTimeout(flush, 600);
+              saver.change({ answers: next });
             }}
             onBlur={flush}
           />
         </Card>
       ))}
-      <p className={`text-[0.75rem] text-muted flex items-center gap-1 justify-center transition ${saved ? 'opacity-100' : 'opacity-0'}`}>
-        <Check size={13} /> Guardado
-      </p>
+      <SaveBar saver={saver} />
     </>
   );
 }

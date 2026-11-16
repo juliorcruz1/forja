@@ -1,8 +1,10 @@
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Check, ChevronRight, History } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { ChevronRight, History } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { SaveBar, SaveStatus, useAutoSaver } from '../components/SaveBits';
 import { Card, Empty, Screen, SectionHeader } from '../components/ui';
+import { AutoSaver } from '../lib/autosave';
 import { db } from '../db/db';
 import { saveJournal } from '../db/repo';
 import type { JournalEntry, Mood } from '../db/types';
@@ -44,13 +46,30 @@ export function JournalScreen() {
   );
 
   if (!data || !q || q.date !== date) return null;
-  const { entry, recent } = q;
+  // Keyed by date: each day (today or a past one) gets its own editor and saver.
+  return <JournalPage key={date} date={date} today={today} entry={q.entry} recent={q.recent} />;
+}
+
+type JournalPatch = Partial<Omit<JournalEntry, 'id' | 'date' | 'createdAt' | 'updatedAt'>>;
+
+export const journalDraftKey = (date: DateKey) => `forja.borrador.diario.${date}`;
+
+function JournalPage({ date, today, entry, recent }: { date: DateKey; today: DateKey; entry?: JournalEntry; recent: JournalEntry[] }) {
   const previous = recent.filter((e) => e.date !== date && hasContent(e)).slice(0, 7);
+  const [saver, state] = useAutoSaver(
+    () => new AutoSaver<JournalPatch>({
+      save: (p) => saveJournal(date, p),
+      draftKey: journalDraftKey(date),
+      savedAt: entry && hasContent(entry) ? new Date(entry.updatedAt) : undefined,
+    }),
+    [date],
+  );
 
   return (
     <Screen
       title="Diario"
       subtitle={formatLong(date)}
+      titleAside={<SaveStatus state={state} onRetry={() => void saver.retry()} />}
       back={date !== today ? '/diario' : undefined}
       right={
         <Link to="/diario/historial" className="pill-ghost text-[0.8125rem] px-3.5">
@@ -58,7 +77,8 @@ export function JournalScreen() {
         </Link>
       }
     >
-      <Editor key={date} date={date} initial={entry} />
+      <Editor saver={saver} initial={entry} />
+      <SaveBar saver={saver} />
 
       <SectionHeader title="Días anteriores" />
       {previous.length === 0 ? (
@@ -74,56 +94,38 @@ export function JournalScreen() {
   );
 }
 
-function Editor({ date, initial }: { date: DateKey; initial: JournalEntry | undefined }) {
-  const [draft, setDraft] = useState<Record<TextField, string>>({
-    line: initial?.line ?? '',
-    reflection: initial?.reflection ?? '',
-    gratitude: initial?.gratitude ?? '',
-    learning: initial?.learning ?? '',
-    notes: initial?.notes ?? '',
+function Editor({ saver, initial }: { saver: AutoSaver<JournalPatch>; initial: JournalEntry | undefined }) {
+  // Text left by a save that never finished (e.g. iOS closed the app) wins over the stored entry.
+  const [recovered] = useState(() => saver.readDraft(initial?.updatedAt));
+  const [draft, setDraft] = useState<Record<TextField, string>>(() => {
+    const r = recovered as Partial<Record<TextField, string>> | undefined;
+    return {
+      line: r?.line ?? initial?.line ?? '',
+      reflection: r?.reflection ?? initial?.reflection ?? '',
+      gratitude: r?.gratitude ?? initial?.gratitude ?? '',
+      learning: r?.learning ?? initial?.learning ?? '',
+      notes: r?.notes ?? initial?.notes ?? '',
+    };
   });
-  const [mood, setMood] = useState<Mood | undefined>(initial?.mood);
-  const [saved, setSaved] = useState(false);
-  const pending = useRef<Partial<Record<TextField, string>>>({});
-  const timer = useRef<number>();
-
-  const flush = () => {
-    window.clearTimeout(timer.current);
-    const patch = pending.current;
-    pending.current = {};
-    if (Object.keys(patch).length) {
-      saveJournal(date, patch).then(() => {
-        setSaved(true);
-        window.setTimeout(() => setSaved(false), 1200);
-      });
-    }
-  };
+  const [mood, setMood] = useState<Mood | undefined>(recovered && 'mood' in recovered ? recovered.mood : initial?.mood);
 
   useEffect(() => {
-    const onHide = () => document.visibilityState === 'hidden' && flush();
-    document.addEventListener('visibilitychange', onHide);
-    return () => {
-      document.removeEventListener('visibilitychange', onHide);
-      flush();
-    };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    if (recovered) {
+      saver.change(recovered);
+      void saver.flush();
+    }
+  }, [saver, recovered]);
 
   const change = (k: TextField, v: string) => {
     setDraft((d) => ({ ...d, [k]: v }));
-    pending.current[k] = v;
-    window.clearTimeout(timer.current);
-    timer.current = window.setTimeout(flush, 600);
+    saver.change({ [k]: v });
   };
+  const flush = () => void saver.flush();
 
   return (
     <>
       <Card>
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-[0.9375rem] font-semibold">¿Cómo estuvo el día?</p>
-          <span className={`text-[0.75rem] text-muted flex items-center gap-1 transition ${saved ? 'opacity-100' : 'opacity-0'}`}>
-            <Check size={13} /> Guardado
-          </span>
-        </div>
+        <p className="text-[0.9375rem] font-semibold mb-3">¿Cómo estuvo el día?</p>
         <div className="flex gap-2 flex-wrap">
           {MOODS.map((m) => (
             <button
@@ -133,7 +135,8 @@ function Editor({ date, initial }: { date: DateKey; initial: JournalEntry | unde
               onClick={() => {
                 const next = mood === m.value ? undefined : m.value;
                 setMood(next);
-                saveJournal(date, { mood: next });
+                saver.change({ mood: next });
+                flush();
               }}
             >
               {m.label}

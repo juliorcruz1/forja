@@ -1,10 +1,12 @@
-import { Minus, Plus } from 'lucide-react';
+import { Check, Minus, Plus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { Habit, LogStatus } from '../db/types';
 import { incrementCount, setChecklistAll, setLogNote, setStatus, toggleChecklistItem } from '../db/repo';
 import type { HabitIndex } from '../domain/habits';
 import { timeLabel } from '../domain/checklist';
 import { type DateKey, formatLong } from '../lib/dates';
+import { AutoSaver } from '../lib/autosave';
+import { SaveStatus, useAutoSaver } from './SaveBits';
 import { Sheet } from './ui';
 import { HabitIcon } from './icons';
 
@@ -21,10 +23,6 @@ export function DayStatusSheet({
   habit, date, idx, onClose,
 }: { habit: Habit | null; date: DateKey; idx: HabitIndex; onClose: () => void }) {
   const log = habit ? idx.log(habit.id, date) : undefined;
-  const [note, setNote] = useState(log?.note ?? '');
-  useEffect(() => {
-    setNote(log?.note ?? '');
-  }, [habit?.id, date]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!habit) return null;
   const status = log?.status ?? 'pending';
   const count = log?.count ?? 0;
@@ -99,17 +97,56 @@ export function DayStatusSheet({
         ))}
       </div>
 
-      <label className="label mt-4">Nota (opcional)</label>
-      <input
-        className="field"
-        value={note}
-        placeholder="Algo que quieras recordar de este día"
-        onChange={(e) => setNote(e.target.value)}
-        onBlur={() => note !== (log?.note ?? '') && setLogNote(habit.id, date, note)}
-      />
-      <button className="pill-primary w-full mt-4" onClick={() => { if (note !== (log?.note ?? '')) setLogNote(habit.id, date, note); onClose(); }}>
+      <NoteBlock key={`${habit.id}:${date}`} habitId={habit.id} date={date} initial={log?.note ?? ''} onClose={onClose} />
+    </Sheet>
+  );
+}
+
+/** The day note autosaves like the Diario (status, Guardar, saved on blur / app hidden / close). */
+function NoteBlock({ habitId, date, initial, onClose }: { habitId: string; date: DateKey; initial: string; onClose: () => void }) {
+  const [saver, state] = useAutoSaver(
+    () => new AutoSaver<{ note: string }>({ save: (p) => setLogNote(habitId, date, p.note ?? '').then(() => undefined), draftKey: `forja.borrador.nota.${habitId}.${date}` }),
+    [habitId, date],
+  );
+  const [recovered] = useState(() => saver.readDraft()?.note);
+  const [note, setNote] = useState(recovered ?? initial);
+  const [flash, setFlash] = useState(false);
+  useEffect(() => {
+    if (recovered !== undefined && recovered !== initial) {
+      saver.change({ note: recovered });
+      void saver.flush();
+    }
+  }, [saver, recovered]); // eslint-disable-line react-hooks/exhaustive-deps
+  const save = async () => {
+    const ok = await saver.flush();
+    if (ok) {
+      setFlash(true);
+      setTimeout(() => setFlash(false), 2000);
+    }
+    return ok;
+  };
+  return (
+    <>
+      <div className="flex items-baseline justify-between gap-2 mt-4">
+        <label className="label" htmlFor="day-note">Nota (opcional)</label>
+        <SaveStatus state={state} onRetry={() => void saver.retry()} />
+      </div>
+      <div className="flex gap-2">
+        <input
+          id="day-note"
+          className="field"
+          value={note}
+          placeholder="Algo que quieras recordar de este día"
+          onChange={(e) => { setNote(e.target.value); saver.change({ note: e.target.value }); }}
+          onBlur={() => void saver.flush()}
+        />
+        <button className="pill-ghost shrink-0 px-4 whitespace-nowrap" onPointerDown={(e) => e.preventDefault()} onClick={save} data-testid="note-save">
+          {flash ? <><Check size={16} /> Guardado ✓</> : 'Guardar'}
+        </button>
+      </div>
+      <button className="pill-primary w-full mt-4" onClick={async () => { if (await saver.flush()) onClose(); }}>
         Listo
       </button>
-    </Sheet>
+    </>
   );
 }
