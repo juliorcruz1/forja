@@ -7,11 +7,12 @@ Uso:
     python descargador.py LINK 1:20:00 1:21:30    -> solo ese tramo del VOD
 
 Requisitos:
-    pip install -U "yt-dlp[default,curl-cffi]"
+    pip install -U "yt-dlp[default,curl-cffi]" customtkinter
     ffmpeg en el PATH
 """
 
 import importlib.util
+import os
 import re
 import shutil
 import subprocess
@@ -26,6 +27,7 @@ MSG_NO_RECONOZCO = "No reconozco ese link"
 MSG_FALTA_YTDLP = "Falta yt-dlp. Corre: pip install -U yt-dlp"
 MSG_KICK = 'Para Kick instala: pip install -U "yt-dlp[default,curl-cffi]"'
 MSG_FALLO = "Falló la descarga. Actualiza yt-dlp: pip install -U yt-dlp"
+MSG_FALTA_CTK = "Falta customtkinter. Corre: pip install -U customtkinter"
 MSG_FFMPEG = "Falta ffmpeg en el PATH: https://ffmpeg.org/download.html"
 MSG_FFMPEG_VIEJO = ("Tu ffmpeg es muy viejo para recortar VODs de Twitch. "
                     "Actualízalo: https://ffmpeg.org/download.html")
@@ -85,6 +87,33 @@ def version_ffmpeg():
     return int(m.group(1)) if m else 0
 
 
+_RX_PROGRESO = re.compile(
+    r"^\[download\]\s+(?P<pct>\d+(?:\.\d+)?)%"
+    r"(?:.*?\bat\s+(?P<vel>~?\s*[\d.]+\s*\w+/s))?"
+    r"(?:.*?\bETA\s+(?P<eta>[\d:]+))?")
+
+
+def leer_progreso(linea):
+    """De '[download]  42.3% of ... at 5MiB/s ETA 00:12' saca
+    (0.423, '5MiB/s', '00:12'). Devuelve None si no es línea de progreso."""
+    m = _RX_PROGRESO.match(linea.strip())
+    if not m:
+        return None
+    vel = re.sub(r"\s+", "", m.group("vel") or "").lstrip("~")
+    return min(float(m.group("pct")) / 100, 1.0), vel, m.group("eta") or ""
+
+
+def abrir_carpeta(carpeta):
+    carpeta = Path(carpeta)
+    carpeta.mkdir(parents=True, exist_ok=True)
+    if sys.platform == "win32":
+        os.startfile(str(carpeta))
+    elif sys.platform == "darwin":
+        subprocess.Popen(["open", str(carpeta)])
+    else:
+        subprocess.Popen(["xdg-open", str(carpeta)])
+
+
 def carpeta_salida(plataforma):
     carpeta = Path.home() / "Descargas" / "Clips" / plataforma
     carpeta.mkdir(parents=True, exist_ok=True)
@@ -95,6 +124,7 @@ def armar_comando(link, plataforma, tipo, carpeta, desde="", hasta=""):
     cmd = [
         sys.executable, "-m", "yt_dlp",
         "--no-playlist", "--newline", "--merge-output-format", "mp4",
+        "--concurrent-fragments", "4",
         "-o", str(carpeta / PLANTILLA),
     ]
     if tipo == "VOD" and (desde or hasta):
@@ -174,92 +204,150 @@ def descargar(link, desde="", hasta="", escribir=print):
 
 # ---------------------------------------------------------------- Ventana
 
+VERDE, ROJO, GRIS = "#4ade80", "#f87171", "#9ca3af"
+
+
 def abrir_ventana():
     import queue
-    import tkinter as tk
-    from tkinter import ttk
+    try:
+        import customtkinter as ctk
+    except ImportError:
+        print(MSG_FALTA_CTK)
+        return 1
 
-    root = tk.Tk()
+    ctk.set_appearance_mode("dark")
+    ctk.set_default_color_theme("blue")
+
+    root = ctk.CTk()
     root.title(TITULO)
-    root.geometry("640x460")
-    root.minsize(480, 360)
+    root.geometry("560x520")
+    root.minsize(460, 440)
 
     cola = queue.Queue()
-    estado = {"descargando": False}
+    estado = {"descargando": False, "texto": None,
+              "carpeta": Path.home() / "Descargas" / "Clips"}
 
-    marco = ttk.Frame(root, padding=16)
-    marco.pack(fill="both", expand=True)
+    marco = ctk.CTkFrame(root, fg_color="transparent")
+    marco.pack(fill="both", expand=True, padx=20, pady=16)
 
-    ttk.Label(marco, text="Pega el link:").pack(anchor="w")
-    var_link = tk.StringVar()
-    entrada = ttk.Entry(marco, textvariable=var_link)
-    entrada.pack(fill="x", pady=(4, 4), ipady=3)
+    ctk.CTkLabel(marco, text=TITULO, font=ctk.CTkFont(size=20, weight="bold")
+                 ).pack(anchor="w", pady=(0, 12))
 
-    lbl_det = tk.Label(marco, text="Esperando link...", fg="gray", anchor="w")
-    lbl_det.pack(fill="x")
+    entrada = ctk.CTkEntry(marco, placeholder_text="Pega el link aquí",
+                           height=42, corner_radius=10, font=ctk.CTkFont(size=14))
+    entrada.pack(fill="x")
+
+    # CTkEntry borra el texto de ejemplo al recibir el foco; como el cursor
+    # arranca aquí, lo dejamos visible hasta que se escriba o pegue algo.
+    try:
+        def _foco(_e):
+            entrada._is_focused = True
+
+        def _quitar_ejemplo(e=None):
+            if e is None or getattr(e, "char", ""):
+                entrada._deactivate_placeholder()
+
+        entrada._entry.bind("<FocusIn>", _foco)
+        entrada._entry.bind("<KeyPress>", _quitar_ejemplo, add="+")
+        entrada._entry.bind("<<Paste>>", lambda e: _quitar_ejemplo(), add="+")
+    except AttributeError:
+        pass
+
+    lbl_det = ctk.CTkLabel(marco, text="Esperando link...", text_color=GRIS, anchor="w")
+    lbl_det.pack(fill="x", pady=(4, 0))
 
     # Tiempos (solo VOD)
-    marco_vod = ttk.Frame(marco)
-    ttk.Label(marco_vod, text="Desde (h:mm:ss)").pack(side="left")
-    var_desde = tk.StringVar()
-    ttk.Entry(marco_vod, textvariable=var_desde, width=10).pack(side="left", padx=(6, 16))
-    ttk.Label(marco_vod, text="Hasta").pack(side="left")
-    var_hasta = tk.StringVar()
-    ttk.Entry(marco_vod, textvariable=var_hasta, width=10).pack(side="left", padx=(6, 0))
+    marco_vod = ctk.CTkFrame(marco, fg_color="transparent")
+    ctk.CTkLabel(marco_vod, text="Desde (h:mm:ss)").pack(side="left")
+    ent_desde = ctk.CTkEntry(marco_vod, width=90, corner_radius=8, placeholder_text="0:00:00")
+    ent_desde.pack(side="left", padx=(8, 18))
+    ctk.CTkLabel(marco_vod, text="Hasta").pack(side="left")
+    ent_hasta = ctk.CTkEntry(marco_vod, width=90, corner_radius=8, placeholder_text="fin")
+    ent_hasta.pack(side="left", padx=(8, 0))
 
-    marco_boton = ttk.Frame(marco)
-    marco_boton.pack(fill="x", pady=(10, 10))
-    boton = ttk.Button(marco_boton, text="Descargar")
+    marco_botones = ctk.CTkFrame(marco, fg_color="transparent")
+    marco_botones.pack(pady=(14, 10))
+    boton = ctk.CTkButton(marco_botones, text="Descargar", width=220, height=44,
+                          corner_radius=12, font=ctk.CTkFont(size=15, weight="bold"))
     boton.pack()
+    boton_carpeta = ctk.CTkButton(
+        marco_botones, text="Abrir carpeta", width=220, height=30, corner_radius=10,
+        fg_color="transparent", border_width=1, border_color=GRIS, text_color=("gray20", "gray85"),
+        hover_color=("gray80", "gray25"))
+    boton_carpeta.pack(pady=(8, 0))
 
-    marco_log = ttk.Frame(marco)
-    marco_log.pack(fill="both", expand=True)
-    log = tk.Text(marco_log, height=10, wrap="word", state="disabled",
-                  font=("Consolas", 9) if sys.platform == "win32" else ("Monospace", 9))
-    barra = ttk.Scrollbar(marco_log, command=log.yview)
-    log.configure(yscrollcommand=barra.set)
-    barra.pack(side="right", fill="y")
-    log.pack(side="left", fill="both", expand=True)
+    marco_prog = ctk.CTkFrame(marco, fg_color="transparent")
+    marco_prog.pack(fill="x", pady=(2, 8))
+    barra = ctk.CTkProgressBar(marco_prog, height=12, corner_radius=6)
+    barra.pack(side="left", fill="x", expand=True)
+    color_barra = barra.cget("progress_color")
 
-    def actualizar_deteccion(*_):
-        texto = var_link.get().strip()
+    def poner_barra(valor):
+        # En 0 CTkProgressBar dibuja un punto; lo ocultamos.
+        barra.configure(progress_color=color_barra if valor > 0 else barra.cget("fg_color"))
+        barra.set(valor)
+
+    poner_barra(0)
+    lbl_prog = ctk.CTkLabel(marco_prog, text="", width=150, anchor="e",
+                            text_color=GRIS, font=ctk.CTkFont(size=12))
+    lbl_prog.pack(side="left", padx=(10, 0))
+
+    log = ctk.CTkTextbox(marco, corner_radius=10, wrap="word",
+                         font=ctk.CTkFont(family="Consolas" if sys.platform == "win32"
+                                          else "monospace", size=11))
+    log.pack(fill="both", expand=True)
+    log.configure(state="disabled")
+
+    def actualizar_deteccion():
+        texto = entrada.get().strip()
+        if texto == estado["texto"]:
+            return
+        estado["texto"] = texto
         det = detectar(texto)
         if not texto:
-            lbl_det.config(text="Esperando link...", fg="gray")
+            lbl_det.configure(text="Esperando link...", text_color=GRIS)
         elif det:
-            lbl_det.config(text=f"Detectado: {det[0]} - {det[1]}", fg="#1a8f3a")
+            lbl_det.configure(text=f"Detectado: {det[0]} - {det[1]}", text_color=VERDE)
         else:
-            lbl_det.config(text="Link no reconocido", fg="#c62828")
+            lbl_det.configure(text="Link no reconocido", text_color=ROJO)
         if det and det[1] == "VOD":
             if not marco_vod.winfo_ismapped():
-                marco_vod.pack(fill="x", pady=(8, 0), before=marco_boton)
+                marco_vod.pack(anchor="w", pady=(8, 0), before=marco_botones)
         else:
             marco_vod.pack_forget()
 
-    var_link.trace_add("write", actualizar_deteccion)
-
-    def escribir_log(linea, reemplazar=False):
+    def escribir_log(linea):
         log.configure(state="normal")
-        if reemplazar:
-            log.delete("end-2l linestart", "end-1c")
         log.insert("end", linea + "\n")
         log.see("end")
         log.configure(state="disabled")
 
-    ultimo = {"progreso": False}
-
     def revisar_cola():
+        actualizar_deteccion()
         try:
             while True:
                 item = cola.get_nowait()
-                if item is None:
+                if isinstance(item, tuple):  # fin: (ok,)
                     estado["descargando"] = False
-                    boton.state(["!disabled"])
+                    boton.configure(state="normal")
+                    if item[0]:
+                        poner_barra(1)
+                        lbl_prog.configure(text="Listo", text_color=VERDE)
+                    else:
+                        lbl_prog.configure(text="Error", text_color=ROJO)
                     continue
-                # Las líneas de progreso se sobreescriben para no llenar el cuadro.
-                es_prog = item.startswith("[download]") and "%" in item
-                escribir_log(item, reemplazar=es_prog and ultimo["progreso"])
-                ultimo["progreso"] = es_prog
+                prog = leer_progreso(item)
+                if prog:
+                    pct, vel, eta = prog
+                    poner_barra(pct)
+                    partes = [f"{pct * 100:.0f}%"]
+                    if vel:
+                        partes.append(vel)
+                    if eta:
+                        partes.append(f"ETA {eta}")
+                    lbl_prog.configure(text="  ".join(partes), text_color=GRIS)
+                else:
+                    escribir_log(item)
         except queue.Empty:
             pass
         root.after(100, revisar_cola)
@@ -267,42 +355,53 @@ def abrir_ventana():
     def iniciar(*_):
         if estado["descargando"]:
             return
-        link = var_link.get().strip()
+        link = entrada.get().strip()
         log.configure(state="normal")
         log.delete("1.0", "end")
         log.configure(state="disabled")
-        ultimo["progreso"] = False
-        if not detectar(link):
+        poner_barra(0)
+        lbl_prog.configure(text="")
+        det = detectar(link)
+        if not det:
             escribir_log(MSG_NO_RECONOZCO)
             return
         estado["descargando"] = True
-        boton.state(["disabled"])
-        desde, hasta = var_desde.get(), var_hasta.get()
+        estado["carpeta"] = Path.home() / "Descargas" / "Clips" / det[0]
+        boton.configure(state="disabled")
+        desde, hasta = ent_desde.get(), ent_hasta.get()
 
         def trabajo():
+            ok = False
             try:
-                descargar(link, desde, hasta, escribir=cola.put)
+                ok = descargar(link, desde, hasta, escribir=cola.put)
             except Exception:
                 cola.put(MSG_FALLO)
             finally:
-                cola.put(None)
+                cola.put((ok,))
 
         threading.Thread(target=trabajo, daemon=True).start()
 
-    boton.config(command=iniciar)
+    def abrir(*_):
+        try:
+            abrir_carpeta(estado["carpeta"])
+        except OSError:
+            escribir_log(f"No pude abrir la carpeta: {estado['carpeta']}")
+
+    boton.configure(command=iniciar)
+    boton_carpeta.configure(command=abrir)
     root.bind("<Return>", iniciar)
     entrada.focus_set()
     root.after(150, entrada.focus_force)
     root.after(100, revisar_cola)
     root.mainloop()
+    return 0
 
 
 # ---------------------------------------------------------------- Consola
 
 def main(args):
     if not args:
-        abrir_ventana()
-        return 0
+        return abrir_ventana()
     link = args[0]
     desde = args[1] if len(args) > 1 else ""
     hasta = args[2] if len(args) > 2 else ""
